@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  password         String
+  name             String
+  refreshTokenHash String?
+  createdAt        DateTime @default(now())
+
+  sources        Source[]
+  schemaVersions SchemaVersion[] @relation("SchemaVersionCreator")
+  uploads        Upload[]
+
+  @@map("users")
+}
+
+model Source {
+  id               String   @id @default(uuid())
+  name             String
+  description      String
+  userId           String
+  currentSchemaVer Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schemaVersions SchemaVersion[]
+  uploads        Upload[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("sources")
+}
+
+model SchemaVersion {
+  id               String    @id @default(uuid())
+  sourceId         String
+  version          Int
+  schemaDefinition Json
+  isActive         Boolean   @default(false)
+  createdBy        String
+  createdAt        DateTime  @default(now())
+  publishedAt      DateTime?
+
+  source  Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  creator User     @relation("SchemaVersionCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  uploads Upload[]
+
+  @@unique([sourceId, version])
+  @@index([createdBy])
+  @@index([sourceId, isActive])
+  @@map("schema_versions")
+}
+
+model Upload {
+  id              String       @id @default(uuid())
+  sourceId        String
+  schemaVersionId String
+  userId          String
+  fileName        String
+  fileSize        BigInt
+  filePath        String
+  fileType        String
+  status          UploadStatus @default(PENDING)
+  totalRows       Int          @default(0)
+  validRows       Int          @default(0)
+  invalidRows     Int          @default(0)
+  createdAt       DateTime     @default(now())
+  completedAt     DateTime?
+
+  source        Source            @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  schemaVersion SchemaVersion     @relation(fields: [schemaVersionId], references: [id], onDelete: Restrict)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  errors        ValidationError[]
+
+  @@index([sourceId])
+  @@index([schemaVersionId])
+  @@index([userId])
+  @@index([status])
+  @@map("uploads")
+}
+
+model ValidationError {
+  id           String  @id @default(uuid())
+  uploadId     String
+  rowNumber    Int
+  columnName   String
+  errorType    String
+  errorMessage String
+  value        String?
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@index([uploadId])
+  @@index([uploadId, rowNumber])
+  @@map("validation_errors")
+}
