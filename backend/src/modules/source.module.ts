@@ -11,6 +11,9 @@ import {
 import { CreateSourceUseCase } from "../application/use-cases/sources/create-source.usecase.js";
 import { PrismaSourceRepository } from "../infrastructure/persistence/repositories/source.repository.js";
 import { UserModule } from "./user.module.js";
+import { GetSourcesUsecase } from "../application/use-cases/sources/get-sources.usecase.js";
+import { UpdateSourcesUsecase } from "../application/use-cases/sources/update-sources.usecase.js";
+import { GetSourceUseCase } from "../application/use-cases/sources/get-source.usecase.js";
 
 @Module({
   imports: [UserModule],
@@ -25,6 +28,22 @@ import { UserModule } from "./user.module.js";
       inject: [USER_REPOSITORY, SOURCE_REPOSITORY],
       useFactory: (users: UserRepository, sources: SourceRepository) =>
         new CreateSourceUseCase(users, sources),
+    },
+    {
+      provide: GetSourcesUsecase,
+      inject: [SOURCE_REPOSITORY],
+      useFactory: (sources: SourceRepository) => new GetSourcesUsecase(sources),
+    },
+    {
+      provide: UpdateSourcesUsecase,
+      inject: [SOURCE_REPOSITORY],
+      useFactory: (sources: SourceRepository) =>
+        new UpdateSourcesUsecase(sources),
+    },
+    {
+      provide: GetSourceUseCase,
+      inject: [SOURCE_REPOSITORY],
+      useFactory: (sources: SourceRepository) => new GetSourceUseCase(sources),
     },
   ],
 })

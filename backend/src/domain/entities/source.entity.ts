@@ -5,5 +5,7 @@ export class Source {
     public readonly description: string,
     public readonly userId: string,
     public readonly createdAt: Date = new Date(),
+    public readonly currentSchemaVer: number | null = null,
+    public readonly updatedAt: Date = createdAt,
   ) {}
 }

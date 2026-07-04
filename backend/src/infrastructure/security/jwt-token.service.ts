@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { sign, SignOptions, verify } from "jsonwebtoken";
+import jsonwebtoken from "jsonwebtoken";
+import type { SignOptions } from "jsonwebtoken";
 import {
   AuthTokenPayload,
   AuthTokens,
@@ -11,6 +12,8 @@ interface JwtPayload {
   email: string;
   type: "access" | "refresh";
 }
+
+const { sign, verify } = jsonwebtoken;
 
 export class JwtTokenService implements AuthTokenService {
   constructor(
