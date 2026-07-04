@@ -95,6 +95,6 @@ import { Sha256TokenHasher } from "../infrastructure/security/sha256-token-hashe
       ) => new LogoutUseCase(users, tokenService, tokenHasher),
     },
   ],
-  exports: [USER_REPOSITORY, JwtAuthGuard],
+  exports: [USER_REPOSITORY, AUTH_TOKEN_SERVICE, JwtAuthGuard],
 })
 export class UserModule {}

@@ -1,5 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import { SourceRepository } from "../../../domain/ports/repositories/source.repository.js";
+import {
+  ListSourcesQuery,
+  PaginatedSources,
+  SourceRepository,
+  UpdateSourceData,
+} from "../../../domain/ports/repositories/source.repository.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { Source } from "../../../domain/entities/source.entity.js";
 
@@ -19,12 +24,46 @@ export class PrismaSourceRepository implements SourceRepository {
     return record ? this.toDomain(record) : null;
   }
 
-  findAll(): Promise<Source[]> {
-    throw new Error("Method not implemented.");
+  async findAll({
+    userId,
+    page,
+    pageSize,
+    search,
+  }: ListSourcesQuery): Promise<PaginatedSources> {
+    const skip = (page - 1) * pageSize;
+    const where = {
+      userId,
+      ...(search?.trim() && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { description: { contains: search, mode: "insensitive" as const } },
+        ],
+      }),
+    };
+    const [content, total] = await Promise.all([
+      this.prisma.source.findMany({
+        skip,
+        take: pageSize,
+        where,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "asc" as const },
+      }),
+      this.prisma.source.count({ where }),
+    ]);
+
+    return { content, total, page, page_size: pageSize };
   }
 
-  update(id: string, source: Source): Promise<void> {
-    throw new Error("Method not implemented.");
+  async update(id: string, source: UpdateSourceData): Promise<void> {
+    await this.prisma.source.update({
+      where: { id },
+      data: source,
+    });
   }
 
   delete(id: string): Promise<void> {
@@ -49,6 +88,8 @@ export class PrismaSourceRepository implements SourceRepository {
     description: string;
     userId: string;
     createdAt: Date;
+    currentSchemaVer: number | null;
+    updatedAt: Date;
   }): Source {
     return new Source(
       record.id,
@@ -56,6 +97,8 @@ export class PrismaSourceRepository implements SourceRepository {
       record.description,
       record.userId,
       record.createdAt,
+      record.currentSchemaVer,
+      record.updatedAt,
     );
   }
 }
