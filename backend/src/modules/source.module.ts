@@ -46,5 +46,6 @@ import { GetSourceUseCase } from "../application/use-cases/sources/get-source.us
       useFactory: (sources: SourceRepository) => new GetSourceUseCase(sources),
     },
   ],
+  exports: [SOURCE_REPOSITORY],
 })
 export class SourceModule {}
