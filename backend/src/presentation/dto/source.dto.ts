@@ -23,14 +23,15 @@ export class CreateSourceDto {
 export class UpdateSourceDto extends PartialType(CreateSourceDto) {}
 
 export class ListSourcesQueryDto {
-  @ApiPropertyOptional({ default: 1, minimum: 1 })
+  @ApiPropertyOptional({ type: Number, default: 1, minimum: 1 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page = 1;
+  page: number = 1;
 
   @ApiPropertyOptional({
     name: "page_size",
+    type: Number,
     default: 20,
     minimum: 1,
     maximum: 100,
@@ -39,7 +40,7 @@ export class ListSourcesQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  page_size = 20;
+  page_size: number = 20;
 
   @ApiPropertyOptional({ example: "hebdo" })
   @IsOptional()

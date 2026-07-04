@@ -4,6 +4,7 @@ import { HealthController } from "../presentation/controllers/health.controller.
 import { InfrastructureModule } from "./infrastructure.module.js";
 import { UserModule } from "./user.module.js";
 import { SourceModule } from "./source.module.js";
+import { SchemaModule } from "./schema.module.js";
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SourceModule } from "./source.module.js";
     InfrastructureModule,
     UserModule,
     SourceModule,
+    SchemaModule,
   ],
   controllers: [HealthController],
 })
