@@ -46,6 +46,18 @@ export class PrismaSchemaRepository implements SchemaVersionRepository {
     return record ? this.toDomain(record) : null;
   }
 
+  async findActiveBySourceId(sourceId: string): Promise<SchemaVersion | null> {
+    const record = await this.prisma.schemaVersion.findFirst({
+      where: {
+        sourceId,
+        isActive: true,
+        publishedAt: { not: null },
+      },
+      orderBy: { version: "desc" },
+    });
+    return record ? this.toDomain(record) : null;
+  }
+
   async findDraftBySourceId(sourceId: string): Promise<SchemaVersion | null> {
     const record = await this.prisma.schemaVersion.findFirst({
       where: { sourceId, publishedAt: null },

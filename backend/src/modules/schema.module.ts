@@ -66,5 +66,6 @@ import { UserModule } from "./user.module.js";
       ) => new PublishSchemaUseCase(sources, schemas),
     },
   ],
+  exports: [SCHEMA_VERSION_REPOSITORY],
 })
 export class SchemaModule {}
