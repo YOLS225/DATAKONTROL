@@ -38,6 +38,7 @@ describe("Schema query use cases", () => {
     schemas = {
       createDraft: jest.fn(),
       findById: jest.fn(),
+      findActiveBySourceId: jest.fn(),
       findDraftBySourceId: jest.fn(),
       findLatestVersionNumber: jest.fn(),
       findAll: jest.fn(),

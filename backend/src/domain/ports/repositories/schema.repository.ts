@@ -21,6 +21,7 @@ export interface PaginatedSchemaVersions {
 export interface SchemaVersionRepository {
   createDraft(schema: SchemaVersion): Promise<void>;
   findById(id: string): Promise<SchemaVersion | null>;
+  findActiveBySourceId(sourceId: string): Promise<SchemaVersion | null>;
   findDraftBySourceId(sourceId: string): Promise<SchemaVersion | null>;
   findLatestVersionNumber(sourceId: string): Promise<number | null>;
   findAll(query: ListSchemaVersionsQuery): Promise<PaginatedSchemaVersions>;

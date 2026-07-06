@@ -17,6 +17,8 @@
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1079.0",
+    "@aws-sdk/lib-storage": "^3.1079.0",
     "@nestjs/common": "^11.1.27",
     "@nestjs/config": "latest",
     "@nestjs/core": "^11.1.27",
@@ -26,12 +28,16 @@
     "@prisma/client": "^7.8.0",
     "@types/uuid": "^10.0.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.79.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "csv-parse": "^7.0.1",
     "jsonwebtoken": "^9.0.3",
+    "minio": "^8.0.7",
     "pg": "latest",
     "reflect-metadata": "latest",
-    "rxjs": "latest"
+    "rxjs": "latest",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@nestjs/cli": "latest",
@@ -40,7 +46,8 @@
     "@types/bcrypt": "^6.0.0",
     "@types/jest": "latest",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "latest",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.1.0",
     "@types/pg": "latest",
     "@types/supertest": "latest",
     "jest": "latest",
