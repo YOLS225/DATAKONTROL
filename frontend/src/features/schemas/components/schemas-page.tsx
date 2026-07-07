@@ -1,0 +1,346 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Check, Database, Layers3, Loader2, Plus, RefreshCw, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { schemaVersionService } from '@/features/schemas/api/schema-version-service';
+import { SchemaColumnsFields } from '@/features/schemas/components/schema-columns-fields';
+import { getSchemaVersionColumns } from '@/features/schemas/components/schema-version-columns';
+import { useSchemaVersions } from '@/features/schemas/hooks/use-schema-versions';
+import {
+  schemaVersionSchema,
+  type SchemaVersionFormData,
+} from '@/features/schemas/schemas/schema-version-schema';
+import type { SchemaVersion } from '@/features/schemas/types/schema-version';
+import { useSources } from '@/features/sources/hooks/use-sources';
+import type { Source } from '@/features/sources/types/source';
+import { DataTableWithSearch } from '@/shared/components/widget/table-with-search/DataTable';
+import { cn } from '@/shared/lib/utils';
+
+export function SchemasPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [selectedSourceId, setSelectedSourceId] = useState('');
+  const sourcesQuery = useSources({ initialPageSize: 100 });
+  const selectedSource = sourcesQuery.data?.data.find((source) => source.id === selectedSourceId);
+  const {
+    data,
+    pagination,
+    changePage,
+    changePageSize,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useSchemaVersions({ sourceId: selectedSourceId });
+  const versions = data?.data ?? [];
+
+  const publishMutation = useMutation({
+    mutationFn: async (version: SchemaVersion) => {
+      if (!selectedSourceId) {
+        throw new Error('Selectionne une source');
+      }
+
+      return (await schemaVersionService.publishVersion(selectedSourceId, version.id)).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schema-versions', selectedSourceId] });
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      toast.success('Version publiee');
+    },
+    onError: (publishError) => {
+      toast.error(publishError instanceof Error ? publishError.message : 'Publication impossible');
+    },
+  });
+
+  const columns = useMemo(
+    () =>
+      getSchemaVersionColumns(
+        (version) => router.push(`/schemas/${version.id}?sourceId=${version.sourceId ?? selectedSourceId}`),
+        (version) => publishMutation.mutate(version),
+        publishMutation.isPending
+      ),
+    [publishMutation, router, selectedSourceId]
+  );
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-lg border bg-card p-5 text-card-foreground shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Schemas</p>
+            <h1 className="text-2xl font-semibold">Versions de schema par source</h1>
+          </div>
+          <button
+            className="inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
+            disabled={!selectedSourceId}
+            onClick={() => refetch()}
+            type="button"
+          >
+            <RefreshCw className={cn('size-4', isFetching && 'animate-spin')} />
+            Actualiser
+          </button>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <aside className="space-y-5">
+          <div className="rounded-lg border bg-card p-5 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="grid size-10 place-items-center rounded-md bg-primary/10 text-primary">
+                <Database className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">Source</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Choisis la source dont tu veux versionner le schema.
+                </p>
+              </div>
+            </div>
+
+            <SourceCombobox
+              isLoading={sourcesQuery.isLoading}
+              onSelect={setSelectedSourceId}
+              selectedSourceId={selectedSourceId}
+              sources={sourcesQuery.data?.data ?? []}
+            />
+          </div>
+
+          <SchemaDraftForm sourceId={selectedSourceId} />
+        </aside>
+
+        <div className="rounded-lg border bg-card p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-base font-semibold">Versions</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {selectedSource ? `Source: ${selectedSource.name}` : 'Selectionne une source pour voir les versions.'}
+            </p>
+          </div>
+
+          {!selectedSourceId ? (
+            <StateCard
+              icon={Layers3}
+              title="Aucune source selectionnee"
+              text="Les versions de schema apparaitront ici."
+            />
+          ) : isError ? (
+            <StateCard
+              icon={Layers3}
+              title="Impossible de charger les versions"
+              text={error instanceof Error ? error.message : 'Erreur inconnue'}
+            />
+          ) : (
+            <DataTableWithSearch
+              columns={columns}
+              currentPage={data?.pagination.currentPage ?? pagination.page}
+              data={versions}
+              emptyMessage="Aucune version pour cette source"
+              isLoading={isLoading || isFetching}
+              onPageChange={changePage}
+              onPageSizeChange={changePageSize}
+              pageSize={data?.pagination.pageSize ?? pagination.pageSize}
+              searchPlaceholder="Rechercher une version"
+              totalItems={data?.pagination.total_elements ?? 0}
+              totalPages={data?.pagination.total_pages ?? 1}
+            />
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SchemaDraftForm({ sourceId }: { sourceId: string }) {
+  const queryClient = useQueryClient();
+  const {
+    register,
+    control,
+    formState: { errors },
+    handleSubmit,
+    reset,
+  } = useForm<SchemaVersionFormData>({
+    resolver: zodResolver(schemaVersionSchema),
+    defaultValues: {
+      columns: [
+        {
+          id: '',
+          name: '',
+          type: 'string',
+          required: true,
+        },
+      ],
+    },
+  });
+  const { fields, append, remove } = useFieldArray({ control, name: 'columns' });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: SchemaVersionFormData) => {
+      if (!sourceId) {
+        throw new Error('Selectionne une source');
+      }
+
+      return (
+        await schemaVersionService.createDraft(sourceId, {
+          schemaDefinition: {
+            columns: data.columns,
+          },
+        })
+      ).data;
+    },
+    onSuccess: () => {
+      reset({
+        columns: [{ id: 'customer-email', name: 'email', type: 'string', required: true }],
+      });
+      queryClient.invalidateQueries({ queryKey: ['schema-versions', sourceId] });
+      toast.success('Brouillon cree');
+    },
+    onError: (createError) => {
+      toast.error(createError instanceof Error ? createError.message : 'Creation impossible');
+    },
+  });
+
+  return (
+    <form className="rounded-lg border bg-card p-5 shadow-sm" onSubmit={handleSubmit((data) => createMutation.mutate(data))}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Nouveau brouillon</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Definis les colonnes attendues.</p>
+        </div>
+        <button
+          className="grid size-10 place-items-center rounded-md border hover:bg-muted"
+          onClick={() => append({ id: `column-${Date.now()}`, name: '', type: 'string', required: false })}
+          type="button"
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+
+      <SchemaColumnsFields errors={errors} fields={fields} register={register} remove={remove} />
+
+      <button
+        className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+        disabled={!sourceId || createMutation.isPending}
+        type="submit"
+      >
+        {createMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Layers3 className="size-4" />}
+        Creer le brouillon
+      </button>
+    </form>
+  );
+}
+
+function SourceCombobox({
+  sources,
+  selectedSourceId,
+  onSelect,
+  isLoading,
+}: {
+  sources: Source[];
+  selectedSourceId: string;
+  onSelect: (sourceId: string) => void;
+  isLoading?: boolean;
+}) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedSource = sources.find((source) => source.id === selectedSourceId);
+  const filteredSources = sources.filter((source) => {
+    const search = query.trim().toLowerCase();
+
+    if (!search) {
+      return true;
+    }
+
+    return (
+      source.name.toLowerCase().includes(search) ||
+      (source.description ?? '').toLowerCase().includes(search)
+    );
+  });
+
+  return (
+    <div className="mt-5 space-y-2">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          className="h-10 w-full rounded-md border bg-input pl-10 pr-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/30"
+          disabled={isLoading}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          placeholder="Rechercher une source"
+          value={query}
+        />
+      </div>
+
+      {isOpen && (
+        <div className="max-h-64 overflow-y-auto rounded-md border bg-background p-1">
+          {isLoading ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">Chargement des sources...</p>
+          ) : filteredSources.length ? (
+            filteredSources.map((source) => {
+              const isSelected = source.id === selectedSourceId;
+
+              return (
+                <button
+                  className={cn(
+                    'flex w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-sm hover:bg-muted',
+                    isSelected && 'bg-primary/10 text-primary'
+                  )}
+                  key={source.id}
+                  onClick={() => {
+                    onSelect(source.id);
+                    setQuery('');
+                    setIsOpen(false);
+                  }}
+                  type="button"
+                >
+                  <span>
+                    <span className="block font-medium">{source.name}</span>
+                    {source.description && (
+                      <span className="block text-xs text-muted-foreground">{source.description}</span>
+                    )}
+                  </span>
+                  {isSelected && <Check className="size-4" />}
+                </button>
+              );
+            })
+          ) : (
+            <p className="px-3 py-2 text-sm text-muted-foreground">Aucune source trouvee</p>
+          )}
+        </div>
+      )}
+
+      {selectedSource ? (
+        <p className="text-xs text-muted-foreground">
+          Source selectionnee : <span className="font-medium text-foreground">{selectedSource.name}</span>
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">Aucune source selectionnee.</p>
+      )}
+    </div>
+  );
+}
+
+function StateCard({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: typeof Layers3;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-lg border border-dashed bg-muted/25 p-8 text-center">
+      <Icon className="mx-auto size-9 text-muted-foreground" />
+      <p className="mt-3 text-sm font-medium">{title}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+    </div>
+  );
+}
