@@ -61,4 +61,5 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .claude
 ARCHITECTURE.md
 starting.md
+/docs
 
