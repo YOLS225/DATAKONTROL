@@ -28,6 +28,7 @@ export function SourcesPage() {
     pagination,
     changePage,
     changePageSize,
+    searchQuery,
     setSearchQuery,
     isLoading,
     isFetching,
@@ -74,9 +75,7 @@ export function SourcesPage() {
               </div>
             </div>
 
-            {isLoading ? (
-              <StateCard icon={Loader2} title="Chargement des sources" text="Recuperation depuis le backend." spin />
-            ) : isError ? (
+            {isError ? (
               <StateCard
                 icon={Database}
                 title="Impossible de charger les sources"
@@ -88,8 +87,8 @@ export function SourcesPage() {
                 currentPage={data?.pagination.currentPage ?? pagination.page}
                 data={sources}
                 emptyMessage="Aucune source ne correspond a cette recherche"
-                initialSearchValue=""
-                isLoading={isLoading}
+                initialSearchValue={searchQuery}
+                isLoading={isLoading || isFetching}
                 onPageChange={changePage}
                 onPageSizeChange={changePageSize}
                 onSearchChange={setSearchQuery}
