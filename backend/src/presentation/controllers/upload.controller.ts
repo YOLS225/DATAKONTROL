@@ -8,6 +8,8 @@ import {
   Param,
   Post,
   Query,
+  Res,
+  StreamableFile,
   UploadedFile,
   UnsupportedMediaTypeException,
   UseGuards,
@@ -23,6 +25,7 @@ import {
 import { SaveFileUseCase } from "../../application/use-cases/uploads/save-file.usecase.js";
 import { GetUploadUseCase } from "../../application/use-cases/uploads/get-upload.usecase.js";
 import { GetUploadsUseCase } from "../../application/use-cases/uploads/get-uploads.usecase.js";
+import { GetUploadFileUseCase } from "../../application/use-cases/uploads/get-upload-file.usecase.js";
 import { GetValidationErrorsUseCase } from "../../application/use-cases/uploads/get-validation-errors.usecase.js";
 import { success } from "../../common/utils/response.dto.js";
 import type { Response } from "../../common/utils/response.dto.js";
@@ -33,6 +36,7 @@ import type { AuthTokenPayload } from "../../domain/ports/services/auth-token.se
 import { CurrentUser } from "../decorators/current-user.decorator.js";
 import { JwtAuthGuard } from "../guards/jwt-auth.guard.js";
 import { ListUploadsQueryDto, PaginationQueryDto } from "../dto/upload.dto.js";
+import type { Response as ExpressResponse } from "express";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const FILE_MIME_TYPES: Record<string, Set<string>> = {
@@ -65,6 +69,7 @@ export class UploadController {
     private readonly saveFileUseCase: SaveFileUseCase,
     private readonly getUploadsUseCase: GetUploadsUseCase,
     private readonly getUploadUseCase: GetUploadUseCase,
+    private readonly getUploadFileUseCase: GetUploadFileUseCase,
     private readonly getValidationErrorsUseCase: GetValidationErrorsUseCase,
   ) {}
 
@@ -153,6 +158,30 @@ export class UploadController {
       id,
     );
     return success(upload, true, "Upload found successfully");
+  }
+
+  @Get(":id/file")
+  @ApiOperation({ summary: "Read an uploaded file" })
+  async readFile(
+    @CurrentUser() user: AuthTokenPayload,
+    @Param("sourceId") sourceId: string,
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: ExpressResponse,
+  ): Promise<StreamableFile> {
+    const file = await this.getUploadFileUseCase.execute(
+      user.userId,
+      sourceId,
+      id,
+    );
+
+    response.setHeader("Content-Type", file.fileType);
+    response.setHeader("Content-Length", file.fileSize.toString());
+    response.setHeader(
+      "Content-Disposition",
+      `inline; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+    );
+
+    return new StreamableFile(file.stream);
   }
 
   @Get(":id/errors")

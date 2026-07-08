@@ -111,6 +111,13 @@ export class PrismaSchemaRepository implements SchemaVersionRepository {
     return result.count === 1;
   }
 
+  async deleteDraft(id: string): Promise<boolean> {
+    const result = await this.prisma.schemaVersion.deleteMany({
+      where: { id, isActive: false, publishedAt: null },
+    });
+    return result.count === 1;
+  }
+
   async publish(
     sourceId: string,
     schemaVersionId: string,

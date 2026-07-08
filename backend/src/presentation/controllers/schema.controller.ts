@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -16,6 +17,7 @@ import { GetSchemaUseCase } from "../../application/use-cases/schema/get-schema.
 import { GetSchemasUsecase } from "../../application/use-cases/schema/get-schemas.usecase.js";
 import { PublishSchemaUseCase } from "../../application/use-cases/schema/publish-schema.usecase.js";
 import { UpdateSchemaUseCase } from "../../application/use-cases/schema/update-schema.usecase.js";
+import { DeleteSchemaUseCase } from "../../application/use-cases/schema/delete-schema.usecase.js";
 import { success } from "../../common/utils/response.dto.js";
 import type { Response } from "../../common/utils/response.dto.js";
 import type { SchemaVersion } from "../../domain/entities/schema.entity.js";
@@ -39,6 +41,7 @@ export class SchemaController {
     private readonly getSchemaUseCase: GetSchemaUseCase,
     private readonly updateSchemaUseCase: UpdateSchemaUseCase,
     private readonly publishSchemaUseCase: PublishSchemaUseCase,
+    private readonly deleteSchemaUseCase: DeleteSchemaUseCase,
   ) {}
 
   @Post()
@@ -113,5 +116,16 @@ export class SchemaController {
     @Param("id") id: string,
   ): Promise<void> {
     return this.publishSchemaUseCase.execute(user.userId, sourceId, id);
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete an unpublished schema draft" })
+  delete(
+    @CurrentUser() user: AuthTokenPayload,
+    @Param("sourceId") sourceId: string,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.deleteSchemaUseCase.execute(user.userId, sourceId, id);
   }
 }

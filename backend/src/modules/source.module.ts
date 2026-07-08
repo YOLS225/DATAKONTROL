@@ -14,6 +14,7 @@ import { UserModule } from "./user.module.js";
 import { GetSourcesUsecase } from "../application/use-cases/sources/get-sources.usecase.js";
 import { UpdateSourcesUsecase } from "../application/use-cases/sources/update-sources.usecase.js";
 import { GetSourceUseCase } from "../application/use-cases/sources/get-source.usecase.js";
+import { DeleteSourceUseCase } from "../application/use-cases/sources/delete-source.usecase.js";
 
 @Module({
   imports: [UserModule],
@@ -44,6 +45,12 @@ import { GetSourceUseCase } from "../application/use-cases/sources/get-source.us
       provide: GetSourceUseCase,
       inject: [SOURCE_REPOSITORY],
       useFactory: (sources: SourceRepository) => new GetSourceUseCase(sources),
+    },
+    {
+      provide: DeleteSourceUseCase,
+      inject: [SOURCE_REPOSITORY],
+      useFactory: (sources: SourceRepository) =>
+        new DeleteSourceUseCase(sources),
     },
   ],
   exports: [SOURCE_REPOSITORY],

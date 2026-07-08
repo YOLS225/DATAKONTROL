@@ -66,8 +66,16 @@ export class PrismaSourceRepository implements SourceRepository {
     });
   }
 
-  delete(id: string): Promise<void> {
-    throw new Error("Method not implemented.");
+  async countLinks(id: string): Promise<number> {
+    const [schemaVersions, uploads] = await Promise.all([
+      this.prisma.schemaVersion.count({ where: { sourceId: id } }),
+      this.prisma.upload.count({ where: { sourceId: id } }),
+    ]);
+    return schemaVersions + uploads;
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.source.delete({ where: { id } });
   }
 
   async save(source: Source): Promise<void> {

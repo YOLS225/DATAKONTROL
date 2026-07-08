@@ -30,5 +30,6 @@ export interface SourceRepository {
   findByName(userId: string, name: string): Promise<Source | null>;
   findAll(query: ListSourcesQuery): Promise<PaginatedSources>;
   update(id: string, source: UpdateSourceData): Promise<void>;
+  countLinks(id: string): Promise<number>;
   delete(id: string): Promise<void>;
 }
