@@ -3,6 +3,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Prisma 7 charge prisma.config.ts pendant `prisma generate` et exige
+# DATABASE_URL, meme si la generation du client ne se connecte pas a la DB.
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=public"
+
 COPY package*.json ./
 COPY prisma ./prisma/
 
@@ -21,6 +25,8 @@ RUN npx prisma generate && npx nest build
 FROM node:20-alpine AS production
 
 WORKDIR /app
+
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=public"
 
 COPY package*.json ./
 COPY prisma ./prisma/
