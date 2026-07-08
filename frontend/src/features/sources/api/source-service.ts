@@ -23,6 +23,10 @@ class SourceService {
   async updateSource(id: string, data: UpdateSourcePayload) {
     return axiosInstance.patch<Source>(`/source/${id}`, data);
   }
+
+  async deleteSource(id: string) {
+    return axiosInstance.delete(`/source/${id}`);
+  }
 }
 
 export const sourceService = new SourceService();
