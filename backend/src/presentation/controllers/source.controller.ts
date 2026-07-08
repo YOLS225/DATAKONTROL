@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -26,6 +27,7 @@ import {
   GetSourceUseCase,
   type GetSourceResult,
 } from "../../application/use-cases/sources/get-source.usecase.js";
+import { DeleteSourceUseCase } from "../../application/use-cases/sources/delete-source.usecase.js";
 import { success } from "../../common/utils/response.dto.js";
 import type { Response } from "../../common/utils/response.dto.js";
 import type { PaginatedSources } from "../../domain/ports/repositories/source.repository.js";
@@ -39,6 +41,7 @@ export class SourceController {
     private readonly getSourcesUsecase: GetSourcesUsecase,
     private readonly getSourceUseCase: GetSourceUseCase,
     private readonly updateSourceUsecase: UpdateSourcesUsecase,
+    private readonly deleteSourceUseCase: DeleteSourceUseCase,
   ) {}
 
   @Post()
@@ -84,5 +87,15 @@ export class SourceController {
     @Body() updateSourceDto: UpdateSourceDto,
   ) {
     return this.updateSourceUsecase.execute(user.userId, id, updateSourceDto);
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete an unlinked source" })
+  delete(
+    @CurrentUser() user: AuthTokenPayload,
+    @Param("id") id: string,
+  ): Promise<void> {
+    return this.deleteSourceUseCase.execute(user.userId, id);
   }
 }

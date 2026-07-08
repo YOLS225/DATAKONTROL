@@ -4,6 +4,7 @@ import { SaveFileUseCase } from "../application/use-cases/uploads/save-file.usec
 import { ValidateUploadUseCase } from "../application/use-cases/uploads/validate-upload.usecase.js";
 import { GetUploadUseCase } from "../application/use-cases/uploads/get-upload.usecase.js";
 import { GetUploadsUseCase } from "../application/use-cases/uploads/get-uploads.usecase.js";
+import { GetUploadFileUseCase } from "../application/use-cases/uploads/get-upload-file.usecase.js";
 import { GetValidationErrorsUseCase } from "../application/use-cases/uploads/get-validation-errors.usecase.js";
 import {
   SCHEMA_VERSION_REPOSITORY,
@@ -119,6 +120,15 @@ import { UserModule } from "./user.module.js";
       inject: [SOURCE_REPOSITORY, UPLOAD_REPOSITORY],
       useFactory: (sources: SourceRepository, uploads: UploadRepository) =>
         new GetUploadUseCase(sources, uploads),
+    },
+    {
+      provide: GetUploadFileUseCase,
+      inject: [SOURCE_REPOSITORY, UPLOAD_REPOSITORY, FILE_STORAGE],
+      useFactory: (
+        sources: SourceRepository,
+        uploads: UploadRepository,
+        storage: FileStorage,
+      ) => new GetUploadFileUseCase(sources, uploads, storage),
     },
     {
       provide: GetValidationErrorsUseCase,

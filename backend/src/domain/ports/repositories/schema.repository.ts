@@ -26,6 +26,7 @@ export interface SchemaVersionRepository {
   findLatestVersionNumber(sourceId: string): Promise<number | null>;
   findAll(query: ListSchemaVersionsQuery): Promise<PaginatedSchemaVersions>;
   updateDefinition(id: string, definition: SchemaDefinition): Promise<boolean>;
+  deleteDraft(id: string): Promise<boolean>;
   publish(
     sourceId: string,
     schemaVersionId: string,

@@ -3,6 +3,7 @@ import { NotFoundError } from "../../../common/exceptions/not_found.js";
 import type {
   SchemaColumn,
   SchemaDefinition,
+  SchemaVersion,
 } from "../../../domain/entities/schema.entity.js";
 import {
   UploadStatus,
@@ -20,6 +21,18 @@ import type { FileStorage } from "../../../domain/ports/services/file-storage.js
 
 const ERROR_BATCH_SIZE = 500;
 
+interface ValidationResult {
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+}
+
+interface ValidationState extends ValidationResult {
+  headersChecked: boolean;
+  invalidHeaders: boolean;
+  errorBatch: ValidationErrorEntity[];
+}
+
 export class ValidateUploadUseCase {
   constructor(
     private readonly uploadRepository: UploadRepository,
@@ -30,6 +43,20 @@ export class ValidateUploadUseCase {
   ) {}
 
   async execute(uploadId: string): Promise<void> {
+    const upload = await this.getProcessableUpload(uploadId);
+    if (!upload) return;
+
+    await this.claimUpload(upload);
+
+    const schema = await this.getUploadSchema(upload);
+    await this.prepareValidation(upload);
+
+    const result = await this.validateFile(upload, schema.schemaDefinition);
+
+    await this.completeUpload(upload.id, result);
+  }
+
+  private async getProcessableUpload(uploadId: string): Promise<Upload | null> {
     const upload = await this.uploadRepository.findById(uploadId);
     if (!upload) {
       throw new NotFoundError("Upload", uploadId);
@@ -38,72 +65,103 @@ export class ValidateUploadUseCase {
       upload.status === UploadStatus.COMPLETED ||
       upload.status === UploadStatus.FAILED
     ) {
-      return;
+      return null;
     }
 
-    await this.claimUpload(upload);
+    return upload;
+  }
 
+  private async getUploadSchema(upload: Upload): Promise<SchemaVersion> {
     const schema = await this.schemaRepository.findById(upload.schemaVersionId);
     if (!schema || schema.sourceId !== upload.sourceId) {
       throw new NotFoundError("Schema version", upload.schemaVersionId);
     }
 
+    return schema;
+  }
+
+  private async prepareValidation(upload: Upload): Promise<void> {
     await this.validationErrorRepository.deleteByUploadId(upload.id);
+  }
+
+  private async validateFile(
+    upload: Upload,
+    definition: SchemaDefinition,
+  ): Promise<ValidationResult> {
     const stream = await this.fileStorage.read(upload.filePath);
-
-    let totalRows = 0;
-    let validRows = 0;
-    let invalidRows = 0;
-    let headersChecked = false;
-    let invalidHeaders = false;
-    let errorBatch: ValidationErrorEntity[] = [];
-
-    const flushErrors = async (): Promise<void> => {
-      if (errorBatch.length === 0) return;
-      await this.validationErrorRepository.saveMany(errorBatch);
-      errorBatch = [];
-    };
+    const state = this.createValidationState();
 
     for await (const row of this.fileParser.parse({
       stream,
       fileName: upload.fileName,
       fileType: upload.fileType,
     })) {
-      totalRows += 1;
-
-      if (!headersChecked) {
-        const headerErrors = this.validateHeaders(
-          upload.id,
-          row,
-          schema.schemaDefinition,
-        );
-        invalidHeaders = headerErrors.length > 0;
-        errorBatch.push(...headerErrors);
-        headersChecked = true;
-      }
-
-      const rowErrors = this.validateRow(
-        upload.id,
-        row,
-        schema.schemaDefinition,
-      );
-      errorBatch.push(...rowErrors);
-
-      if (invalidHeaders || rowErrors.length > 0) {
-        invalidRows += 1;
-      } else {
-        validRows += 1;
-      }
-
-      if (errorBatch.length >= ERROR_BATCH_SIZE) {
-        await flushErrors();
-      }
+      this.validateParsedRow(upload.id, row, definition, state);
+      await this.flushErrorsIfNeeded(state);
     }
 
-    await flushErrors();
+    await this.flushErrors(state);
+    return {
+      totalRows: state.totalRows,
+      validRows: state.validRows,
+      invalidRows: state.invalidRows,
+    };
+  }
+
+  private createValidationState(): ValidationState {
+    return {
+      totalRows: 0,
+      validRows: 0,
+      invalidRows: 0,
+      headersChecked: false,
+      invalidHeaders: false,
+      errorBatch: [],
+    };
+  }
+
+  private validateParsedRow(
+    uploadId: string,
+    row: ParsedRow,
+    definition: SchemaDefinition,
+    state: ValidationState,
+  ): void {
+    state.totalRows += 1;
+
+    if (!state.headersChecked) {
+      const headerErrors = this.validateHeaders(uploadId, row, definition);
+      state.invalidHeaders = headerErrors.length > 0;
+      state.errorBatch.push(...headerErrors);
+      state.headersChecked = true;
+    }
+
+    const rowErrors = this.validateRow(uploadId, row, definition);
+    state.errorBatch.push(...rowErrors);
+
+    if (state.invalidHeaders || rowErrors.length > 0) {
+      state.invalidRows += 1;
+    } else {
+      state.validRows += 1;
+    }
+  }
+
+  private async flushErrorsIfNeeded(state: ValidationState): Promise<void> {
+    if (state.errorBatch.length < ERROR_BATCH_SIZE) return;
+    await this.flushErrors(state);
+  }
+
+  private async flushErrors(state: ValidationState): Promise<void> {
+    if (state.errorBatch.length === 0) return;
+    await this.validationErrorRepository.saveMany(state.errorBatch);
+    state.errorBatch = [];
+  }
+
+  private async completeUpload(
+    uploadId: string,
+    result: ValidationResult,
+  ): Promise<void> {
     const completed = await this.uploadRepository.complete(
-      upload.id,
-      { totalRows, validRows, invalidRows },
+      uploadId,
+      result,
       new Date(),
     );
     if (!completed) {

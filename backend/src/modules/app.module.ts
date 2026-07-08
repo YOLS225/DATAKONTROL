@@ -6,6 +6,7 @@ import { UserModule } from "./user.module.js";
 import { SourceModule } from "./source.module.js";
 import { SchemaModule } from "./schema.module.js";
 import { UploadModule } from "./upload.module.js";
+import { DashboardModule } from "./dashboard.module.js";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UploadModule } from "./upload.module.js";
     SourceModule,
     SchemaModule,
     UploadModule,
+    DashboardModule,
   ],
   controllers: [HealthController],
 })

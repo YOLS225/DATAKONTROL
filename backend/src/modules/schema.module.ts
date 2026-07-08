@@ -4,6 +4,7 @@ import { GetSchemaUseCase } from "../application/use-cases/schema/get-schema.use
 import { GetSchemasUsecase } from "../application/use-cases/schema/get-schemas.usecase.js";
 import { PublishSchemaUseCase } from "../application/use-cases/schema/publish-schema.usecase.js";
 import { UpdateSchemaUseCase } from "../application/use-cases/schema/update-schema.usecase.js";
+import { DeleteSchemaUseCase } from "../application/use-cases/schema/delete-schema.usecase.js";
 import {
   SCHEMA_VERSION_REPOSITORY,
   type SchemaVersionRepository,
@@ -64,6 +65,14 @@ import { UserModule } from "./user.module.js";
         sources: SourceRepository,
         schemas: SchemaVersionRepository,
       ) => new PublishSchemaUseCase(sources, schemas),
+    },
+    {
+      provide: DeleteSchemaUseCase,
+      inject: [SOURCE_REPOSITORY, SCHEMA_VERSION_REPOSITORY],
+      useFactory: (
+        sources: SourceRepository,
+        schemas: SchemaVersionRepository,
+      ) => new DeleteSchemaUseCase(sources, schemas),
     },
   ],
   exports: [SCHEMA_VERSION_REPOSITORY],
