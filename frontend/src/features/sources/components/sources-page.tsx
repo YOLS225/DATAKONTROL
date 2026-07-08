@@ -1,5 +1,6 @@
 'use client';
 
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   Database,
   Loader2,
@@ -101,13 +102,11 @@ export function SourcesPage() {
           </div>
         </div>
 
-        {editingSource && (
-          <EditSourcePanel
-            key={editingSource.id}
-            onClose={() => setEditingSource(null)}
-            source={editingSource}
-          />
-        )}
+        <EditSourceDialog
+          onClose={() => setEditingSource(null)}
+          open={Boolean(editingSource)}
+          source={editingSource}
+        />
       </section>
     </div>
   );
@@ -185,7 +184,39 @@ function CreateSourceForm() {
   );
 }
 
-function EditSourcePanel({ source, onClose }: { source: Source; onClose: () => void }) {
+function EditSourceDialog({
+  source,
+  open,
+  onClose,
+}: {
+  source: Source | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  if (!source) {
+    return null;
+  }
+
+  return (
+    <Dialog.Root
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onClose();
+        }
+      }}
+      open={open}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm data-[state=closed]:animate-out data-[state=open]:animate-in" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-card p-5 text-card-foreground shadow-xl outline-none data-[state=closed]:animate-out data-[state=open]:animate-in md:p-6">
+          <EditSourceForm key={source.id} onClose={onClose} source={source} />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function EditSourceForm({ source, onClose }: { source: Source; onClose: () => void }) {
   const queryClient = useQueryClient();
   const {
     register,
@@ -219,19 +250,21 @@ function EditSourcePanel({ source, onClose }: { source: Source; onClose: () => v
   });
 
   return (
-    <aside className="rounded-lg border bg-card p-5 shadow-sm">
+    <>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Modification</p>
-          <h2 className="mt-1 text-xl font-semibold">{source.name}</h2>
+          <Dialog.Title className="mt-1 text-xl font-semibold">{source.name}</Dialog.Title>
+          <Dialog.Description className="mt-2 text-sm text-muted-foreground">
+            Mets a jour les informations visibles dans la liste des sources.
+          </Dialog.Description>
         </div>
-        <button
+        <Dialog.Close
           className="grid size-10 place-items-center rounded-md border hover:bg-muted"
-          onClick={onClose}
           type="button"
         >
           <X className="size-4" />
-        </button>
+        </Dialog.Close>
       </div>
 
       <form
@@ -258,16 +291,25 @@ function EditSourcePanel({ source, onClose }: { source: Source; onClose: () => v
           {errors.description && <FieldError message={errors.description.message} />}
         </label>
 
-        <button
-          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
-          disabled={updateMutation.isPending}
-          type="submit"
-        >
-          {updateMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Pencil className="size-4" />}
-          Enregistrer
-        </button>
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          <Dialog.Close
+            className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
+            disabled={updateMutation.isPending}
+            type="button"
+          >
+            Annuler
+          </Dialog.Close>
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+            disabled={updateMutation.isPending}
+            type="submit"
+          >
+            {updateMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Pencil className="size-4" />}
+            Enregistrer
+          </button>
+        </div>
       </form>
-    </aside>
+    </>
   );
 }
 

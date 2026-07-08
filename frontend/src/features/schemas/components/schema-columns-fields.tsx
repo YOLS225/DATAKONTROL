@@ -23,23 +23,34 @@ export function SchemaColumnsFields({
 }) {
   return (
     <>
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 overflow-hidden rounded-lg border">
+        <div className="hidden grid-cols-[minmax(140px,1fr)_minmax(140px,1fr)_150px_110px_44px] gap-3 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
+          <span>Identifiant</span>
+          <span>Nom colonne</span>
+          <span>Type</span>
+          <span>Requise</span>
+          <span />
+        </div>
+
         {fields.map((field, index) => (
-          <div className="rounded-lg border bg-background p-3" key={field.id}>
-            <div className="grid gap-3">
+          <div
+            className="border-b bg-background p-3 last:border-b-0"
+            key={field.id}
+          >
+            <div className="grid gap-3 lg:grid-cols-[minmax(140px,1fr)_minmax(140px,1fr)_150px_110px_44px] lg:items-start">
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Identifiant</span>
-                <input className="dk-input mt-1" placeholder="customer-email" {...register(`columns.${index}.id`)} />
+                <span className="text-xs font-medium text-muted-foreground lg:sr-only">Identifiant</span>
+                <input className="dk-input mt-1 lg:mt-0" placeholder="customer-email" {...register(`columns.${index}.id`)} />
                 {errors.columns?.[index]?.id && <FieldError message={errors.columns[index]?.id?.message} />}
               </label>
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Nom colonne</span>
-                <input className="dk-input mt-1" placeholder="email" {...register(`columns.${index}.name`)} />
+                <span className="text-xs font-medium text-muted-foreground lg:sr-only">Nom colonne</span>
+                <input className="dk-input mt-1 lg:mt-0" placeholder="email" {...register(`columns.${index}.name`)} />
                 {errors.columns?.[index]?.name && <FieldError message={errors.columns[index]?.name?.message} />}
               </label>
               <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Type</span>
-                <select className="dk-input mt-1" {...register(`columns.${index}.type`)}>
+                <span className="text-xs font-medium text-muted-foreground lg:sr-only">Type</span>
+                <select className="dk-input mt-1 lg:mt-0" {...register(`columns.${index}.type`)}>
                   {schemaColumnTypes.map((type) => (
                     <option key={type.value} value={type.value}>
                       {type.label}
@@ -47,19 +58,22 @@ export function SchemaColumnsFields({
                   ))}
                 </select>
               </label>
-              <label className="flex h-10 items-center gap-2 text-sm">
+              <label className="flex h-10 items-center gap-2 text-sm lg:justify-center">
                 <input className="size-4" type="checkbox" {...register(`columns.${index}.required`)} />
-                Colonne requise
+                <span className="lg:sr-only">Colonne requise</span>
               </label>
-              {!readonly && fields.length > 1 && (
+              {!readonly && fields.length > 1 ? (
                 <button
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-md border text-sm hover:bg-muted"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md border text-sm hover:bg-muted"
                   onClick={() => remove(index)}
+                  title="Retirer la colonne"
                   type="button"
                 >
                   <Trash2 className="size-4" />
-                  Retirer
+                  <span className="lg:sr-only">Retirer</span>
                 </button>
+              ) : (
+                <span className="hidden lg:block" />
               )}
             </div>
           </div>

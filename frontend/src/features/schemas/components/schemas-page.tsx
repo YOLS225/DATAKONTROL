@@ -88,8 +88,8 @@ export function SchemasPage() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <aside className="space-y-5">
+      <section className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <aside>
           <div className="rounded-lg border bg-card p-5 shadow-sm">
             <div className="flex items-start gap-3">
               <div className="grid size-10 place-items-center rounded-md bg-primary/10 text-primary">
@@ -110,45 +110,47 @@ export function SchemasPage() {
               sources={sourcesQuery.data?.data ?? []}
             />
           </div>
-
-          <SchemaDraftForm sourceId={selectedSourceId} />
         </aside>
 
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <div className="mb-4">
-            <h2 className="text-base font-semibold">Versions</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {selectedSource ? `Source: ${selectedSource.name}` : 'Selectionne une source pour voir les versions.'}
-            </p>
-          </div>
+        <div className="space-y-5">
+          <SchemaDraftForm sourceId={selectedSourceId} />
 
-          {!selectedSourceId ? (
-            <StateCard
-              icon={Layers3}
-              title="Aucune source selectionnee"
-              text="Les versions de schema apparaitront ici."
-            />
-          ) : isError ? (
-            <StateCard
-              icon={Layers3}
-              title="Impossible de charger les versions"
-              text={error instanceof Error ? error.message : 'Erreur inconnue'}
-            />
-          ) : (
-            <DataTableWithSearch
-              columns={columns}
-              currentPage={data?.pagination.currentPage ?? pagination.page}
-              data={versions}
-              emptyMessage="Aucune version pour cette source"
-              isLoading={isLoading || isFetching}
-              onPageChange={changePage}
-              onPageSizeChange={changePageSize}
-              pageSize={data?.pagination.pageSize ?? pagination.pageSize}
-              searchPlaceholder="Rechercher une version"
-              totalItems={data?.pagination.total_elements ?? 0}
-              totalPages={data?.pagination.total_pages ?? 1}
-            />
-          )}
+          <div className="rounded-lg border bg-card p-5 shadow-sm">
+            <div className="mb-4">
+              <h2 className="text-base font-semibold">Versions</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {selectedSource ? `Source: ${selectedSource.name}` : 'Selectionne une source pour voir les versions.'}
+              </p>
+            </div>
+
+            {!selectedSourceId ? (
+              <StateCard
+                icon={Layers3}
+                title="Aucune source selectionnee"
+                text="Les versions de schema apparaitront ici."
+              />
+            ) : isError ? (
+              <StateCard
+                icon={Layers3}
+                title="Impossible de charger les versions"
+                text={error instanceof Error ? error.message : 'Erreur inconnue'}
+              />
+            ) : (
+              <DataTableWithSearch
+                columns={columns}
+                currentPage={data?.pagination.currentPage ?? pagination.page}
+                data={versions}
+                emptyMessage="Aucune version pour cette source"
+                isLoading={isLoading || isFetching}
+                onPageChange={changePage}
+                onPageSizeChange={changePageSize}
+                pageSize={data?.pagination.pageSize ?? pagination.pageSize}
+                searchPlaceholder="Rechercher une version"
+                totalItems={data?.pagination.total_elements ?? 0}
+                totalPages={data?.pagination.total_pages ?? 1}
+              />
+            )}
+          </div>
         </div>
       </section>
     </div>
