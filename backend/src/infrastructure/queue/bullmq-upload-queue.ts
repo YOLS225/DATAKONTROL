@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Queue } from "bullmq";
 import type { UploadQueue } from "../../domain/ports/services/upload-queue.js";
+import { createRedisConnectionOptions } from "./redis-connection.js";
 
 export const UPLOAD_QUEUE_NAME = "upload-validation";
 export const VALIDATE_UPLOAD_JOB = "validate-upload";
@@ -19,13 +20,8 @@ export class BullMqUploadQueue implements UploadQueue, OnModuleDestroy {
   >;
 
   constructor(config: ConfigService) {
-    const password = config.get<string>("REDIS_PASSWORD");
     this.queue = new Queue(UPLOAD_QUEUE_NAME, {
-      connection: {
-        host: config.get<string>("REDIS_HOST") ?? "localhost",
-        port: Number(config.get<string>("REDIS_PORT") ?? 6379),
-        ...(password ? { password } : {}),
-      },
+      connection: createRedisConnectionOptions(config),
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: "exponential", delay: 1_000 },

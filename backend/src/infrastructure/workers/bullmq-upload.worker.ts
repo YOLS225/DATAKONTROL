@@ -14,6 +14,7 @@ import {
   VALIDATE_UPLOAD_JOB,
   type ValidateUploadJobData,
 } from "../queue/bullmq-upload-queue.js";
+import { createRedisConnectionOptions } from "../queue/redis-connection.js";
 
 @Injectable()
 export class BullMqUploadWorker implements OnModuleInit, OnModuleDestroy {
@@ -31,14 +32,10 @@ export class BullMqUploadWorker implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    const password = this.config.get<string>("REDIS_PASSWORD");
     this.worker = new Worker(UPLOAD_QUEUE_NAME, (job) => this.process(job), {
-      connection: {
-        host: this.config.get<string>("REDIS_HOST") ?? "localhost",
-        port: Number(this.config.get<string>("REDIS_PORT") ?? 6379),
-        ...(password ? { password } : {}),
+      connection: createRedisConnectionOptions(this.config, {
         maxRetriesPerRequest: null,
-      },
+      }),
       concurrency: Number(
         this.config.get<string>("UPLOAD_WORKER_CONCURRENCY") ?? 2,
       ),
