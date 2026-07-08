@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { sourceService } from '@/features/sources/api/source-service';
@@ -19,11 +19,14 @@ import { getSourceColumns } from '@/features/sources/components/source-columns';
 import { useSources } from '@/features/sources/hooks/use-sources';
 import { sourceSchema, type SourceFormData } from '@/features/sources/schemas/source-schema';
 import type { Source } from '@/features/sources/types/source';
+import { ConfirmDialog } from '@/shared/components/widget/confirm-dialog';
 import { DataTableWithSearch } from '@/shared/components/widget/table-with-search/DataTable';
 import { cn } from '@/shared/lib/utils';
 
 export function SourcesPage() {
   const [editingSource, setEditingSource] = useState<Source | null>(null);
+  const [sourceToDelete, setSourceToDelete] = useState<Source | null>(null);
+  const queryClient = useQueryClient();
   const {
     data,
     pagination,
@@ -38,9 +41,30 @@ export function SourcesPage() {
     refetch,
   } = useSources();
   const sources = data?.data ?? [];
+  const deleteMutation = useMutation({
+    mutationFn: async (source: Source) => {
+      await sourceService.deleteSource(source.id);
+      return source;
+    },
+    onSuccess: (deletedSource) => {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      toast.success(`Source ${deletedSource.name} supprimee`);
+    },
+    onError: (deleteError) => {
+      toast.error(deleteError instanceof Error ? deleteError.message : 'Suppression impossible');
+    },
+  });
+  const handleDeleteSource = useCallback((source: Source) => {
+    setSourceToDelete(source);
+  }, []);
   const columns = useMemo(
-    () => getSourceColumns((source) => setEditingSource(source)),
-    []
+    () =>
+      getSourceColumns(
+        (source) => setEditingSource(source),
+        handleDeleteSource,
+        deleteMutation.variables?.id
+      ),
+    [deleteMutation.variables?.id, handleDeleteSource]
   );
 
   return (
@@ -106,6 +130,25 @@ export function SourcesPage() {
           onClose={() => setEditingSource(null)}
           open={Boolean(editingSource)}
           source={editingSource}
+        />
+        <ConfirmDialog
+          confirmLabel="Supprimer"
+          description="Cette action est possible uniquement si la source n'est liee a aucun schema et aucun upload."
+          isLoading={deleteMutation.isPending}
+          onConfirm={() => {
+            if (sourceToDelete) {
+              deleteMutation.mutate(sourceToDelete, {
+                onSuccess: () => setSourceToDelete(null),
+              });
+            }
+          }}
+          onOpenChange={(open) => {
+            if (!open && !deleteMutation.isPending) {
+              setSourceToDelete(null);
+            }
+          }}
+          open={Boolean(sourceToDelete)}
+          title={sourceToDelete ? `Supprimer ${sourceToDelete.name}` : 'Supprimer la source'}
         />
       </section>
     </div>

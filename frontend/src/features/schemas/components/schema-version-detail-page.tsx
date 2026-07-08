@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Layers3, Loader2, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
@@ -18,6 +18,7 @@ import {
   type SchemaVersionFormData,
 } from '@/features/schemas/schemas/schema-version-schema';
 import type { SchemaVersion } from '@/features/schemas/types/schema-version';
+import { ConfirmDialog } from '@/shared/components/widget/confirm-dialog';
 import { cn } from '@/shared/lib/utils';
 
 const emptyColumn: SchemaVersionFormData['columns'][number] = {
@@ -81,6 +82,7 @@ export function SchemaVersionDetailPage() {
 function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; version: SchemaVersion }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const isActive = version.isActive === true;
   const isPublished = isActive || Boolean(version.publishedAt) || version.status === 'PUBLISHED';
   const {
@@ -141,18 +143,6 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
     },
   });
 
-  const handleDelete = () => {
-    if (isActive) {
-      return;
-    }
-
-    const confirmed = window.confirm('Supprimer cette version de schema ?');
-
-    if (confirmed) {
-      deleteMutation.mutate();
-    }
-  };
-
   return (
     <div className="space-y-6">
       <section className="rounded-lg border bg-card p-5 text-card-foreground shadow-sm">
@@ -190,7 +180,7 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
           <button
             className="inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isActive || deleteMutation.isPending}
-            onClick={handleDelete}
+            onClick={() => setIsDeleteDialogOpen(true)}
             title={isActive ? 'Une version active ne peut pas etre supprimee' : undefined}
             type="button"
           >
@@ -243,6 +233,20 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
           )}
         </form>
       </section>
+
+      <ConfirmDialog
+        confirmLabel="Supprimer"
+        description="Seules les versions non publiees peuvent etre supprimees. Une version active ou deja publiee sera refusee par l'API."
+        isLoading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setIsDeleteDialogOpen(false);
+          }
+        }}
+        open={isDeleteDialogOpen}
+        title={version.version ? `Supprimer la version ${version.version}` : 'Supprimer ce brouillon'}
+      />
     </div>
   );
 }

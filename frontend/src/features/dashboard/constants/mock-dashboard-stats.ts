@@ -1,0 +1,83 @@
+import type { DashboardStats } from '@/features/dashboard/types/dashboard-stats';
+
+export const mockDashboardStats: DashboardStats = {
+  summary: {
+    totalUploads: 128,
+    successfulUploads: 92,
+    failedUploads: 7,
+    uploadsWithErrors: 29,
+    successRate: 71.9,
+    errorRate: 28.1,
+    totalInvalidRows: 642,
+  },
+  uploadsBySource: [
+    {
+      sourceId: 'odci-hebdo',
+      sourceName: 'ODCI-Hebdo',
+      totalUploads: 42,
+      successfulUploads: 31,
+      failedUploads: 2,
+      uploadsWithErrors: 9,
+      invalidRows: 214,
+    },
+    {
+      sourceId: 'transactions',
+      sourceName: 'Transactions',
+      totalUploads: 34,
+      successfulUploads: 24,
+      failedUploads: 1,
+      uploadsWithErrors: 9,
+      invalidRows: 188,
+    },
+    {
+      sourceId: 'clients',
+      sourceName: 'Fichier clients',
+      totalUploads: 28,
+      successfulUploads: 21,
+      failedUploads: 3,
+      uploadsWithErrors: 4,
+      invalidRows: 95,
+    },
+    {
+      sourceId: 'produits',
+      sourceName: 'Produits',
+      totalUploads: 24,
+      successfulUploads: 16,
+      failedUploads: 1,
+      uploadsWithErrors: 7,
+      invalidRows: 145,
+    },
+  ],
+  mostActiveSources: [
+    {
+      sourceId: 'odci-hebdo',
+      sourceName: 'ODCI-Hebdo',
+      totalUploads: 42,
+      lastUploadAt: '2026-07-08T10:30:00.000Z',
+      successRate: 73.8,
+      invalidRows: 214,
+    },
+    {
+      sourceId: 'transactions',
+      sourceName: 'Transactions',
+      totalUploads: 34,
+      lastUploadAt: '2026-07-08T09:12:00.000Z',
+      successRate: 70.6,
+      invalidRows: 188,
+    },
+    {
+      sourceId: 'clients',
+      sourceName: 'Fichier clients',
+      totalUploads: 28,
+      lastUploadAt: '2026-07-07T17:45:00.000Z',
+      successRate: 75,
+      invalidRows: 95,
+    },
+  ],
+  errorTypes: [
+    { type: 'REQUIRED', label: 'Champ requis', count: 310 },
+    { type: 'INVALID_TYPE', label: 'Type invalide', count: 178 },
+    { type: 'MISSING_COLUMN', label: 'Colonne manquante', count: 96 },
+    { type: 'UNKNOWN_COLUMN', label: 'Colonne inconnue', count: 58 },
+  ],
+};

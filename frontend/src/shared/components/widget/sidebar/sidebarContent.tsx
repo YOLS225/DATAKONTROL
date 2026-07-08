@@ -25,9 +25,9 @@ const navigation = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: BarChart3, enabled: true },
   { id: 'sources', label: 'Sources', href: '/sources', icon: Database, enabled: true },
   { id: 'schemas', label: 'Schemas', href: '/schemas', icon: Layers3, enabled: true },
-  { id: 'uploads', label: 'Uploads', href: '/uploads', icon: UploadCloud, enabled: false },
-  { id: 'reports', label: 'Rapports', href: '/reports', icon: FileText, enabled: false },
-  { id: 'settings', label: 'Parametres', href: '/settings', icon: Settings, enabled: false },
+  { id: 'uploads', label: 'Uploads', href: '/uploads', icon: UploadCloud, enabled: true },
+  { id: 'reports', label: 'Rapports', href: '/reports', icon: FileText, enabled: true },
+  { id: 'settings', label: 'Parametres', href: '/settings', icon: Settings, enabled: true },
 ];
 
 export default function SidebarContent({
