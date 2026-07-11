@@ -9,7 +9,7 @@ import type {
 
 class AuthService {
   async register(data: RegisterPayload) {
-    return axiosInstance.post<AuthSessionResponse>('/auth/register', data);
+    return axiosInstance.post<void>('/auth/register', data);
   }
 
   async login(data: LoginPayload) {

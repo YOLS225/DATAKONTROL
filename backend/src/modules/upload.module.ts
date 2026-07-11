@@ -5,6 +5,7 @@ import { ValidateUploadUseCase } from "../application/use-cases/uploads/validate
 import { GetUploadUseCase } from "../application/use-cases/uploads/get-upload.usecase.js";
 import { GetUploadsUseCase } from "../application/use-cases/uploads/get-uploads.usecase.js";
 import { GetUploadFileUseCase } from "../application/use-cases/uploads/get-upload-file.usecase.js";
+import { GetValidUploadRowsUseCase } from "../application/use-cases/uploads/get-valid-upload-rows.usecase.js";
 import { GetValidationErrorsUseCase } from "../application/use-cases/uploads/get-validation-errors.usecase.js";
 import {
   SCHEMA_VERSION_REPOSITORY,
@@ -129,6 +130,33 @@ import { UserModule } from "./user.module.js";
         uploads: UploadRepository,
         storage: FileStorage,
       ) => new GetUploadFileUseCase(sources, uploads, storage),
+    },
+    {
+      provide: GetValidUploadRowsUseCase,
+      inject: [
+        SOURCE_REPOSITORY,
+        UPLOAD_REPOSITORY,
+        SCHEMA_VERSION_REPOSITORY,
+        VALIDATION_ERROR_REPOSITORY,
+        FILE_STORAGE,
+        FILE_PARSER,
+      ],
+      useFactory: (
+        sources: SourceRepository,
+        uploads: UploadRepository,
+        schemas: SchemaVersionRepository,
+        errors: ValidationErrorRepository,
+        storage: FileStorage,
+        parser: FileParser,
+      ) =>
+        new GetValidUploadRowsUseCase(
+          sources,
+          uploads,
+          schemas,
+          errors,
+          storage,
+          parser,
+        ),
     },
     {
       provide: GetValidationErrorsUseCase,

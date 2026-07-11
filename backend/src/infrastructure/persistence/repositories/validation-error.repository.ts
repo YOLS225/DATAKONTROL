@@ -65,6 +65,26 @@ export class PrismaValidationErrorRepository implements ValidationErrorRepositor
     };
   }
 
+  async findInvalidRowNumbers(uploadId: string): Promise<Set<number>> {
+    const rows = await this.prisma.validationError.findMany({
+      where: { uploadId },
+      select: { rowNumber: true },
+      distinct: ["rowNumber"],
+    });
+    return new Set(rows.map((row) => row.rowNumber));
+  }
+
+  async hasHeaderErrors(uploadId: string): Promise<boolean> {
+    const count = await this.prisma.validationError.count({
+      where: {
+        uploadId,
+        rowNumber: 1,
+        errorType: { in: ["MISSING_COLUMN", "UNKNOWN_COLUMN"] },
+      },
+    });
+    return count > 0;
+  }
+
   private toDomainErrorType(
     errorType: string,
   ): ValidationErrorEntity["errorType"] {
@@ -73,6 +93,7 @@ export class PrismaValidationErrorRepository implements ValidationErrorRepositor
       case "UNKNOWN_COLUMN":
       case "REQUIRED":
       case "INVALID_TYPE":
+      case "DUPLICATE_ROW":
         return errorType;
       default:
         throw new Error(`Unknown validation error type: ${errorType}`);

@@ -26,6 +26,7 @@ import { SaveFileUseCase } from "../../application/use-cases/uploads/save-file.u
 import { GetUploadUseCase } from "../../application/use-cases/uploads/get-upload.usecase.js";
 import { GetUploadsUseCase } from "../../application/use-cases/uploads/get-uploads.usecase.js";
 import { GetUploadFileUseCase } from "../../application/use-cases/uploads/get-upload-file.usecase.js";
+import { GetValidUploadRowsUseCase } from "../../application/use-cases/uploads/get-valid-upload-rows.usecase.js";
 import { GetValidationErrorsUseCase } from "../../application/use-cases/uploads/get-validation-errors.usecase.js";
 import { success } from "../../common/utils/response.dto.js";
 import type { Response } from "../../common/utils/response.dto.js";
@@ -70,6 +71,7 @@ export class UploadController {
     private readonly getUploadsUseCase: GetUploadsUseCase,
     private readonly getUploadUseCase: GetUploadUseCase,
     private readonly getUploadFileUseCase: GetUploadFileUseCase,
+    private readonly getValidUploadRowsUseCase: GetValidUploadRowsUseCase,
     private readonly getValidationErrorsUseCase: GetValidationErrorsUseCase,
   ) {}
 
@@ -199,5 +201,28 @@ export class UploadController {
       { page: query.page, pageSize: query.page_size },
     );
     return success(errors, true, "Validation errors found successfully");
+  }
+
+  @Get(":id/valid-rows")
+  @ApiOperation({ summary: "Download valid rows as CSV" })
+  async downloadValidRows(
+    @CurrentUser() user: AuthTokenPayload,
+    @Param("sourceId") sourceId: string,
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: ExpressResponse,
+  ): Promise<StreamableFile> {
+    const file = await this.getValidUploadRowsUseCase.execute(
+      user.userId,
+      sourceId,
+      id,
+    );
+
+    response.setHeader("Content-Type", file.fileType);
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+    );
+
+    return new StreamableFile(file.stream);
   }
 }

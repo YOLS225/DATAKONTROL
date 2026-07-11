@@ -18,6 +18,7 @@ import { GetSchemasUsecase } from "../../application/use-cases/schema/get-schema
 import { PublishSchemaUseCase } from "../../application/use-cases/schema/publish-schema.usecase.js";
 import { UpdateSchemaUseCase } from "../../application/use-cases/schema/update-schema.usecase.js";
 import { DeleteSchemaUseCase } from "../../application/use-cases/schema/delete-schema.usecase.js";
+import { DuplicateSchemaUseCase } from "../../application/use-cases/schema/duplicate-schema.usecase.js";
 import { success } from "../../common/utils/response.dto.js";
 import type { Response } from "../../common/utils/response.dto.js";
 import type { SchemaVersion } from "../../domain/entities/schema.entity.js";
@@ -40,6 +41,7 @@ export class SchemaController {
     private readonly getSchemasUsecase: GetSchemasUsecase,
     private readonly getSchemaUseCase: GetSchemaUseCase,
     private readonly updateSchemaUseCase: UpdateSchemaUseCase,
+    private readonly duplicateSchemaUseCase: DuplicateSchemaUseCase,
     private readonly publishSchemaUseCase: PublishSchemaUseCase,
     private readonly deleteSchemaUseCase: DeleteSchemaUseCase,
   ) {}
@@ -116,6 +118,22 @@ export class SchemaController {
     @Param("id") id: string,
   ): Promise<void> {
     return this.publishSchemaUseCase.execute(user.userId, sourceId, id);
+  }
+
+  @Post(":id/duplicate")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Duplicate a schema version as a draft" })
+  async duplicate(
+    @CurrentUser() user: AuthTokenPayload,
+    @Param("sourceId") sourceId: string,
+    @Param("id") id: string,
+  ): Promise<Response<SchemaVersion>> {
+    const schema = await this.duplicateSchemaUseCase.execute(
+      user.userId,
+      sourceId,
+      id,
+    );
+    return success(schema, true, "Schema draft duplicated successfully");
   }
 
   @Delete(":id")

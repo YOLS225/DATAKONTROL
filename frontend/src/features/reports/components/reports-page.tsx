@@ -1,8 +1,11 @@
 'use client';
 
-import { AlertTriangle, Check, Database, FileText, RefreshCw, Search } from 'lucide-react';
+import { AlertTriangle, Check, Database, Download, FileText, RefreshCw, Search } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { reportService } from '@/features/reports/api/report-service';
 import { uploadErrorColumns } from '@/features/reports/components/upload-error-columns';
 import { useUploadErrors } from '@/features/reports/hooks/use-upload-errors';
 import { useSources } from '@/features/sources/hooks/use-sources';
@@ -35,6 +38,24 @@ export function ReportsPage() {
   } = useUploadErrors({ sourceId: selectedSourceId, uploadId: selectedUploadId });
   const errors = data?.data ?? [];
   const errorTotal = data?.pagination.total_elements ?? selectedUpload?.invalidRows ?? selectedUpload?.errorCount ?? errors.length;
+  const downloadValidRowsMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSourceId || !selectedUploadId || !selectedUpload) {
+        throw new Error('Selectionne un upload');
+      }
+
+      const response = await reportService.downloadValidRows(selectedSourceId, selectedUploadId);
+      const blobUrl = window.URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `valid-${getUploadFilename(selectedUpload).replace(/\.[^.]+$/, '')}.csv`;
+      link.click();
+      window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60_000);
+    },
+    onError: (downloadError) => {
+      toast.error(downloadError instanceof Error ? downloadError.message : 'Telechargement impossible');
+    },
+  });
 
   const completedUploads = useMemo(
     () => uploads.filter((upload) => upload.status === 'COMPLETED' || upload.status === 'FAILED'),
@@ -107,11 +128,22 @@ export function ReportsPage() {
           <ReportSummary source={selectedSource} upload={selectedUpload} totalErrors={errorTotal} />
 
           <div className="rounded-lg border bg-card p-5 shadow-sm">
-            <div className="mb-4">
-              <h2 className="text-base font-semibold">Details des erreurs</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {selectedUpload ? getUploadFilename(selectedUpload) : 'Selectionne un upload pour consulter les erreurs.'}
-              </p>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold">Details des erreurs</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selectedUpload ? getUploadFilename(selectedUpload) : 'Selectionne un upload pour consulter les erreurs.'}
+                </p>
+              </div>
+              <button
+                className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
+                disabled={!selectedUploadId || downloadValidRowsMutation.isPending}
+                onClick={() => downloadValidRowsMutation.mutate()}
+                type="button"
+              >
+                <Download className="size-4" />
+                Lignes valides
+              </button>
             </div>
 
             {!selectedSourceId ? (
@@ -284,7 +316,7 @@ function UploadPicker({
 
             return (
               <PickerButton
-                description={`${upload.status ?? 'UNKNOWN'} - ${invalidRows} erreur${invalidRows > 1 ? 's' : ''}`}
+                description={`${getUploadStatusLabel(upload.status)} - ${invalidRows} lignes invalides`}
                 isSelected={isSelected}
                 key={upload.id}
                 label={getUploadFilename(upload)}
@@ -411,4 +443,19 @@ function StateCard({
 
 function getUploadFilename(upload: UploadItem) {
   return upload.originalName ?? upload.originalFilename ?? upload.fileName ?? upload.filename ?? 'Fichier recu';
+}
+
+function getUploadStatusLabel(status?: string) {
+  switch (status) {
+    case 'COMPLETED':
+      return 'Termine';
+    case 'FAILED':
+      return 'Echoue';
+    case 'PROCESSING':
+      return 'Traitement';
+    case 'PENDING':
+      return 'En attente';
+    default:
+      return 'Statut inconnu';
+  }
 }

@@ -34,6 +34,10 @@ class SchemaVersionService {
     return axiosInstance.post<SchemaVersion>(`/source/${sourceId}/schema-versions/${id}/publish`);
   }
 
+  async duplicateVersion(sourceId: string, id: string) {
+    return axiosInstance.post<SchemaVersionResponse>(`/source/${sourceId}/schema-versions/${id}/duplicate`);
+  }
+
   async deleteVersion(sourceId: string, id: string) {
     return axiosInstance.delete(`/source/${sourceId}/schema-versions/${id}`);
   }

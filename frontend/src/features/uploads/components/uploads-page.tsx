@@ -193,7 +193,7 @@ function UploadFileForm({ sourceId }: { sourceId: string }) {
       toast.success('Upload recu, traitement en cours');
     },
     onError: (uploadError) => {
-      toast.error(uploadError instanceof Error ? uploadError.message : 'Upload impossible');
+      toast.error(getUploadErrorMessage(uploadError));
     },
   });
 
@@ -231,6 +231,11 @@ function UploadFileForm({ sourceId }: { sourceId: string }) {
         />
       </label>
       {errors.file && <FieldError message={errors.file.message} />}
+      {uploadMutation.isError && (
+        <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {getUploadErrorMessage(uploadMutation.error)}
+        </div>
+      )}
 
       <button
         className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
@@ -343,6 +348,20 @@ function FieldError({ message }: { message?: string }) {
   }
 
   return <p className="mt-2 text-xs text-destructive">{message}</p>;
+}
+
+function getUploadErrorMessage(uploadError: unknown): string {
+  if (uploadError instanceof Error) {
+    if (/Only CSV, XLS and XLSX/i.test(uploadError.message)) {
+      return 'Format non supporte. Envoie un fichier CSV, XLS ou XLSX.';
+    }
+    if (/file too large|10 MB|too large/i.test(uploadError.message)) {
+      return 'Fichier trop lourd. La taille maximale est de 10 MB.';
+    }
+    return uploadError.message;
+  }
+
+  return 'Upload impossible. Verifie le format du fichier et reessaie.';
 }
 
 function StateCard({

@@ -26,7 +26,7 @@ import {
   type AuthFormData,
 } from '@/features/auth/schemas/auth-schema';
 import { cn } from '@/shared/lib/utils';
-import { useUserStore, type UserSession } from '@/shared/stores/user-store';
+import { useUserStore } from '@/shared/stores/user-store';
 
 export function LoginSection() {
   const router = useRouter();
@@ -63,18 +63,29 @@ export function LoginSection() {
           throw new Error('Le nom est requis');
         }
 
-        return (await authService.register({
+        await authService.register({
           name,
           email: data.email,
           password: data.password,
-        })).data;
+        });
+        return { mode: 'register' as const };
       }
 
-      return (await authService.login({ email: data.email, password: data.password })).data;
+      return {
+        mode: 'login' as const,
+        session: (await authService.login({ email: data.email, password: data.password })).data,
+      };
     },
-    onSuccess: (authSession: UserSession) => {
-      setSession(authSession);
+    onSuccess: (result) => {
       reset();
+
+      if (result.mode === 'register') {
+        setMode('login');
+        toast.success('Compte cree. Tu peux maintenant te connecter.');
+        return;
+      }
+
+      setSession(result.session);
       toast.success('Session ouverte');
       router.replace('/dashboard');
     },
@@ -194,7 +205,7 @@ export function LoginSection() {
               <Field error={errors.name?.message} icon={<User className="size-4" />} label="Nom">
                 <input
                   className="dk-input pl-10"
-                  placeholder="Ex: Yoann LASM"
+                  placeholder="Ex: Awa Kouame"
                   {...register('name')}
                 />
               </Field>
@@ -203,7 +214,7 @@ export function LoginSection() {
             <Field error={errors.email?.message} icon={<Mail className="size-4" />} label="Email">
               <input
                 className="dk-input pl-10"
-                placeholder="Ex: yoann@example.com"
+                placeholder="Ex: awa@example.com"
                 type="email"
                 {...register('email')}
               />

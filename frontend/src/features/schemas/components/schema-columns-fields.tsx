@@ -23,6 +23,18 @@ export function SchemaColumnsFields({
 }) {
   return (
     <>
+      <div className="mt-5 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground">Formats attendus</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <FormatBadge className="bg-sky-500/10 text-sky-700 dark:text-sky-300" label="Texte" value="toute valeur" />
+          <FormatBadge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" label="Nombre entier" value="2024" />
+          <FormatBadge className="bg-lime-500/10 text-lime-700 dark:text-lime-300" label="Nombre decimal" value="1250.75" />
+          <FormatBadge className="bg-violet-500/10 text-violet-700 dark:text-violet-300" label="Booleen" value="true/false, 1/0, yes/no" />
+          <FormatBadge className="bg-amber-500/10 text-amber-700 dark:text-amber-300" label="Date" value="YYYY-MM-DD" />
+          <FormatBadge className="bg-rose-500/10 text-rose-700 dark:text-rose-300" label="Date et heure" value="YYYY-MM-DDTHH:mm:ss.sssZ" />
+        </div>
+      </div>
+
       <div className="mt-5 overflow-hidden rounded-lg border">
         <div className="hidden grid-cols-[minmax(140px,1fr)_minmax(140px,1fr)_150px_110px_44px] gap-3 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid">
           <span>Identifiant</span>
@@ -82,6 +94,23 @@ export function SchemaColumnsFields({
 
       {errors.columns?.root?.message && <FieldError message={errors.columns.root.message} />}
     </>
+  );
+}
+
+function FormatBadge({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string;
+  className: string;
+}) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${className}`}>
+      <span className="font-medium">{label}</span>
+      <span className="opacity-80">{value}</span>
+    </span>
   );
 }
 

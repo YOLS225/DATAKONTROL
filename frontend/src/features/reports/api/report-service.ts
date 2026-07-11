@@ -7,6 +7,12 @@ class ReportService {
       params,
     });
   }
+
+  async downloadValidRows(sourceId: string, uploadId: string) {
+    return axiosInstance.get<Blob>(`/source/${sourceId}/uploads/${uploadId}/valid-rows`, {
+      responseType: 'blob',
+    });
+  }
 }
 
 export const reportService = new ReportService();

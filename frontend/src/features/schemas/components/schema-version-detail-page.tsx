@@ -202,7 +202,7 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
             {!isPublished && (
               <button
                 className="inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm hover:bg-muted"
-                onClick={() => append({ id: `column-${Date.now()}`, name: '', type: 'string', required: false })}
+                onClick={() => append({ id: '', name: '', type: 'string', required: false })}
                 type="button"
               >
                 <Plus className="size-4" />

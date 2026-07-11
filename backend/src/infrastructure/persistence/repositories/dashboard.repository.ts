@@ -15,6 +15,7 @@ const ERROR_LABELS: Record<string, string> = {
   UNKNOWN_COLUMN: "Colonne inconnue",
   REQUIRED: "Champ requis",
   INVALID_TYPE: "Type invalide",
+  DUPLICATE_ROW: "Doublon",
 };
 
 @Injectable()
@@ -167,11 +168,15 @@ export class PrismaDashboardRepository implements DashboardRepository {
       summary.successfulUploads,
       summary.totalUploads,
     );
+    const errorRate = this.percentage(
+      summary.uploadsWithErrors + summary.failedUploads,
+      summary.totalUploads,
+    );
 
     return {
       ...summary,
       successRate,
-      errorRate: this.roundPercentage(100 - successRate),
+      errorRate,
     };
   }
 

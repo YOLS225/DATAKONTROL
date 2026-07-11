@@ -58,14 +58,40 @@ export function SchemasPage() {
     },
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: async (version: SchemaVersion) => {
+      const sourceId = version.sourceId ?? selectedSourceId;
+
+      if (!sourceId) {
+        throw new Error('Selectionne une source');
+      }
+
+      return (await schemaVersionService.duplicateVersion(sourceId, version.id)).data;
+    },
+    onSuccess: (response) => {
+      const duplicatedVersion = unwrapSchemaVersion(response);
+      queryClient.invalidateQueries({ queryKey: ['schema-versions', selectedSourceId] });
+      toast.success('Brouillon duplique');
+
+      if (duplicatedVersion?.id) {
+        router.push(`/schemas/${duplicatedVersion.id}?sourceId=${duplicatedVersion.sourceId ?? selectedSourceId}`);
+      }
+    },
+    onError: (duplicateError) => {
+      toast.error(duplicateError instanceof Error ? duplicateError.message : 'Duplication impossible');
+    },
+  });
+
   const columns = useMemo(
     () =>
       getSchemaVersionColumns(
         (version) => router.push(`/schemas/${version.id}?sourceId=${version.sourceId ?? selectedSourceId}`),
+        (version) => duplicateMutation.mutate(version),
         (version) => publishMutation.mutate(version),
+        duplicateMutation.isPending,
         publishMutation.isPending
       ),
-    [publishMutation, router, selectedSourceId]
+    [duplicateMutation, publishMutation, router, selectedSourceId]
   );
 
   return (
@@ -196,7 +222,7 @@ function SchemaDraftForm({ sourceId }: { sourceId: string }) {
     },
     onSuccess: () => {
       reset({
-        columns: [{ id: 'customer-email', name: 'email', type: 'string', required: true }],
+        columns: [{ id: '', name: '', type: 'string', required: true }],
       });
       queryClient.invalidateQueries({ queryKey: ['schema-versions', sourceId] });
       toast.success('Brouillon cree');
@@ -215,7 +241,7 @@ function SchemaDraftForm({ sourceId }: { sourceId: string }) {
         </div>
         <button
           className="grid size-10 place-items-center rounded-md border hover:bg-muted"
-          onClick={() => append({ id: `column-${Date.now()}`, name: '', type: 'string', required: false })}
+          onClick={() => append({ id: '', name: '', type: 'string', required: false })}
           type="button"
         >
           <Plus className="size-4" />
@@ -234,6 +260,15 @@ function SchemaDraftForm({ sourceId }: { sourceId: string }) {
       </button>
     </form>
   );
+}
+
+function unwrapSchemaVersion(response: unknown): SchemaVersion | undefined {
+  if (!response) return undefined;
+  if (typeof response === 'object' && 'data' in response) {
+    const data = (response as { data?: SchemaVersion }).data;
+    return data;
+  }
+  return response as SchemaVersion;
 }
 
 function SourceCombobox({

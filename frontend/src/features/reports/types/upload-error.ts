@@ -1,4 +1,10 @@
-export type UploadErrorType = 'MISSING_COLUMN' | 'UNKNOWN_COLUMN' | 'REQUIRED' | 'INVALID_TYPE' | string;
+export type UploadErrorType =
+  | 'MISSING_COLUMN'
+  | 'UNKNOWN_COLUMN'
+  | 'REQUIRED'
+  | 'INVALID_TYPE'
+  | 'DUPLICATE_ROW'
+  | string;
 
 export type UploadErrorItem = {
   id?: string;

@@ -10,7 +10,7 @@ Le parcours fonctionnel cible est le suivant:
 
 1. L'utilisateur cree un compte et se connecte.
 2. Il cree une source de donnees, par exemple "Ventes Orange CI" ou "Stock Banque Atlantique".
-3. Il cree une version de schema pour cette source.
+3. Il cree une version de schema pour cette source, ou duplique une version existante pour partir d'une base deja validee.
 4. Il publie le schema a utiliser comme reference.
 5. Il upload un fichier CSV, XLS ou XLSX.
 6. Le backend stocke le fichier, cree un upload en base et lance la validation en asynchrone.
@@ -177,6 +177,10 @@ string, integer, decimal, boolean, date, datetime
 
 La publication impose qu'un schema contienne au moins une colonne. Le validateur empeche aussi les colonnes avec identifiants ou noms vides, ainsi que les doublons d'`id` ou de `name`.
 
+Une version peut aussi etre dupliquee. Dans ce cas, le systeme cree une nouvelle version brouillon avec la meme `schemaDefinition`, un nouveau numero de version et aucune date de publication. La duplication ne rend jamais le schema actif automatiquement: l'utilisateur doit modifier si besoin puis publier explicitement.
+
+Cette operation respecte la meme contrainte fonctionnelle que la creation manuelle: une source ne peut avoir qu'un seul brouillon non publie a la fois. Cela evite les conflits de travail et garde le parcours de publication simple.
+
 ### 3.4 Upload
 
 Un upload represente un fichier soumis a validation. Il garde:
@@ -265,6 +269,7 @@ Next.js fournit une base solide pour structurer l'interface par pages. TanStack 
 - Les use cases sont identifies clairement et correspondent aux actions metier.
 - Le traitement asynchrone des uploads evite de bloquer l'API.
 - L'association d'un upload a une version precise de schema rend les resultats auditables.
+- La duplication de schema evite de repartir de zero quand une source evolue legerement.
 - Les erreurs de validation sont stockees ligne par ligne, ce qui permet un rapport exploitable.
 - Le stockage objet evite de mettre les fichiers binaires en base.
 - Le backend gere les fichiers CSV et Excel.
@@ -274,12 +279,13 @@ Next.js fournit une base solide pour structurer l'interface par pages. TanStack 
 ## 7. Limites et points qui ont moins bien marche
 
 - Le schema de validation reste volontairement simple: il ne gere pas encore les contraintes avancees comme min/max, regex, enum, unicite, longueur maximale ou formats metier.
+- La duplication de schema est volontairement limitee a la meme source; il n'existe pas encore de copie de schema entre sources differentes.
 - Le type `date` accepte uniquement le format ISO `YYYY-MM-DD`, alors que certains fichiers de demonstration utilisent des formats comme `DD/MM/YYYY`. Il faudrait rendre le format configurable par colonne ou par source.
 - Le CSV parser utilise la configuration par defaut de `csv-parse`. Les delimiters specifiques par source, par exemple `;`, ne sont pas encore modelises dans le schema.
 - Les erreurs lancees par les parsers sont des erreurs techniques generiques. Elles pourraient etre transformees en erreurs metier plus lisibles.
 - Excel est charge en memoire, ce qui est acceptable avec la limite de 10 Mo mais moins adapte a de tres gros fichiers.
 - Le worker BullMQ est embarque dans le meme processus NestJS que l'API. C'est simple en local, mais en production il serait preferable de separer API et worker.
-- Il n'y a pas encore de mecanisme de telechargement des lignes valides uniquement.
+- Le telechargement des lignes valides est disponible, mais il regenere un CSV depuis le fichier original au moment de la demande.
 - Le modele ne stocke pas les donnees validees, seulement les erreurs et le fichier original.
 - La gestion multi-tenant est basee sur l'utilisateur, mais il n'y a pas encore d'organisation, de role ou de permission fine.
 - Les tests automatises peuvent etre renforces, surtout sur la validation, les parsers et les workflows d'upload.
@@ -293,7 +299,6 @@ Next.js fournit une base solide pour structurer l'interface par pages. TanStack 
 - Permettre de configurer le separateur CSV, l'encodage et la presence du header par source.
 - Ajouter des regles inter-colonnes, par exemple `date_fin >= date_debut`.
 - Ajouter des regles conditionnelles, par exemple "si type = entreprise, alors siret requis".
-- Produire un fichier de sortie contenant uniquement les lignes valides.
 - Produire un fichier d'erreurs enrichi telechargeable.
 
 ### Architecture et exploitation
@@ -311,6 +316,7 @@ Next.js fournit une base solide pour structurer l'interface par pages. TanStack 
 - Ajouter un workflow de validation de schema avant publication.
 - Ajouter une notion de source active/inactive.
 - Gerer des schemas importables/exportables.
+- Permettre de dupliquer un schema vers une autre source, avec adaptation des colonnes si necessaire.
 - Ajouter un historique des actions utilisateur.
 
 ### API et securite
@@ -335,9 +341,38 @@ Next.js fournit une base solide pour structurer l'interface par pages. TanStack 
 Le projet privilegie une base propre et demonstrable plutot qu'un moteur de validation exhaustif. Les choix structurants ont donc ete:
 
 - garder le modele de schema simple pour livrer rapidement le parcours complet;
+- autoriser la duplication de version pour accelerer les evolutions de schema sans ajouter un systeme complexe de templates;
 - utiliser une architecture decouplee pour pouvoir enrichir les regles plus tard;
 - traiter les uploads en asynchrone des le depart;
 - stocker les fichiers dans un objet store plutot qu'en base;
 - garder une API REST classique et documentee par Swagger.
 
 Ces arbitrages donnent une application fonctionnelle, extensible et proche d'une architecture production, tout en laissant des axes clairs pour aller vers un produit de controle de donnees plus complet.
+
+## 10. Deploiement
+
+Le projet est deploye en gardant le mono-repo GitHub. Chaque plateforme pointe vers le sous-dossier qui la concerne:
+
+- Frontend: Vercel, avec `frontend` comme root directory.
+- Backend: Render, avec `backend` comme root directory et un build Docker base sur `backend/Dockerfile`.
+- Base de donnees: PostgreSQL managé sur Render.
+- File de jobs: Render Key Value compatible Redis, utilise par BullMQ.
+- Stockage fichier: Cloudflare R2 via API compatible S3.
+
+Le frontend de production est disponible a l'adresse:
+
+```text
+https://datakontrol.vercel.app
+```
+
+Le backend expose l'API NestJS sur Render. La variable `NEXT_PUBLIC_API_URL` du frontend pointe vers l'URL publique Render suffixee par `/api`.
+
+Ce choix permet de garder une separation claire:
+
+- Vercel sert l'interface Next.js.
+- Render execute le backend, les migrations Prisma au demarrage et le worker BullMQ embarque.
+- PostgreSQL conserve les metadonnees, schemas, uploads et erreurs.
+- R2 conserve les fichiers originaux.
+- Redis conserve les jobs de validation.
+
+Pour une montee en charge plus serieuse, l'evolution naturelle serait de separer le worker BullMQ dans un service Render dedie, au lieu de le garder dans le meme processus que l'API.

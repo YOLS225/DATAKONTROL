@@ -9,6 +9,8 @@ Le projet est organise en deux applications:
 
 Le dossier `data` contient des jeux de donnees de demonstration pour tester le parcours complet.
 
+Application deployee: `https://datakontrol.vercel.app`
+
 ## Fonctionnalites
 
 - Authentification par email/mot de passe avec access token et refresh token.
@@ -223,6 +225,7 @@ La liste accepte `page`, `page_size` et `search`.
 | `GET` | `/api/source/:sourceId/schema-versions/:id` | Recupere une version |
 | `PATCH` | `/api/source/:sourceId/schema-versions/:id` | Modifie un brouillon |
 | `POST` | `/api/source/:sourceId/schema-versions/:id/publish` | Publie une version |
+| `POST` | `/api/source/:sourceId/schema-versions/:id/duplicate` | Duplique une version en brouillon |
 | `DELETE` | `/api/source/:sourceId/schema-versions/:id` | Supprime un brouillon non publie |
 
 Types de colonnes supportes:
@@ -257,6 +260,7 @@ Exemple de definition de schema:
 | `GET` | `/api/source/:sourceId/uploads/:id` | Recupere un upload et son statut |
 | `GET` | `/api/source/:sourceId/uploads/:id/file` | Lit le fichier original |
 | `GET` | `/api/source/:sourceId/uploads/:id/errors` | Liste les erreurs de validation |
+| `GET` | `/api/source/:sourceId/uploads/:id/valid-rows` | Telecharge les lignes valides en CSV |
 
 L'upload se fait en `multipart/form-data` avec un champ `file`.
 

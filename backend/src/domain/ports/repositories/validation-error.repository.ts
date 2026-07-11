@@ -21,4 +21,6 @@ export interface ValidationErrorRepository {
   saveMany(errors: ValidationErrorEntity[]): Promise<void>;
   deleteByUploadId(uploadId: string): Promise<void>;
   findAll(query: ListValidationErrorsQuery): Promise<PaginatedValidationErrors>;
+  findInvalidRowNumbers(uploadId: string): Promise<Set<number>>;
+  hasHeaderErrors(uploadId: string): Promise<boolean>;
 }

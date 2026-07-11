@@ -30,6 +30,7 @@ interface ValidationResult {
 interface ValidationState extends ValidationResult {
   headersChecked: boolean;
   invalidHeaders: boolean;
+  rowSignatures: Map<string, number>;
   errorBatch: ValidationErrorEntity[];
 }
 
@@ -115,6 +116,7 @@ export class ValidateUploadUseCase {
       invalidRows: 0,
       headersChecked: false,
       invalidHeaders: false,
+      rowSignatures: new Map(),
       errorBatch: [],
     };
   }
@@ -135,6 +137,7 @@ export class ValidateUploadUseCase {
     }
 
     const rowErrors = this.validateRow(uploadId, row, definition);
+    rowErrors.push(...this.validateDuplicateRow(uploadId, row, definition, state));
     state.errorBatch.push(...rowErrors);
 
     if (state.invalidHeaders || rowErrors.length > 0) {
@@ -213,6 +216,41 @@ export class ValidateUploadUseCase {
       }
     }
     return errors;
+  }
+
+  private validateDuplicateRow(
+    uploadId: string,
+    row: ParsedRow,
+    definition: SchemaDefinition,
+    state: ValidationState,
+  ): ValidationErrorEntity[] {
+    const signature = this.getRowSignature(row, definition);
+    const firstRowNumber = state.rowSignatures.get(signature);
+
+    if (firstRowNumber === undefined) {
+      state.rowSignatures.set(signature, row.rowNumber);
+      return [];
+    }
+
+    return [
+      this.error(
+        uploadId,
+        row.rowNumber,
+        "_row",
+        "DUPLICATE_ROW",
+        `La ligne duplique la ligne ${firstRowNumber}`,
+        `Ligne ${firstRowNumber}`,
+      ),
+    ];
+  }
+
+  private getRowSignature(
+    row: ParsedRow,
+    definition: SchemaDefinition,
+  ): string {
+    return JSON.stringify(
+      definition.columns.map((column) => row.values[column.name] ?? ""),
+    );
   }
 
   private validateRow(

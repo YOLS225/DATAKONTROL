@@ -20,6 +20,10 @@ const errorTypeLabels: Record<string, { label: string; className: string }> = {
     label: 'Type invalide',
     className: 'bg-primary/10 text-primary',
   },
+  DUPLICATE_ROW: {
+    label: 'Doublon',
+    className: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-300',
+  },
 };
 
 export const uploadErrorColumns: ColumnDef<UploadErrorItem>[] = [

@@ -38,7 +38,7 @@ export const getUploadColumns = (onViewFile: (upload: UploadItem) => void, isVie
         <div className="text-sm">
           <p>{upload.totalRows ?? 0} total</p>
           <p className="text-xs text-muted-foreground">
-            {upload.validRows ?? 0} valides / {upload.invalidRows ?? upload.errorCount ?? 0} erreurs
+            {upload.validRows ?? 0} valides / {upload.invalidRows ?? upload.errorCount ?? 0} invalides
           </p>
         </div>
       );

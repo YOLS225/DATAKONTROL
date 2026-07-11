@@ -83,9 +83,7 @@ export function DashboardHome() {
               <option value="90d">90 jours</option>
               <option value="all">Tout</option>
             </select>
-            <div className="hidden w-72 md:block">
-              <SearchBar onSearch={setSearch} placeholder="Rechercher une source" search={search} />
-            </div>
+
             <button
               className="grid size-10 place-items-center rounded-md border bg-card hover:bg-muted"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -108,7 +106,7 @@ export function DashboardHome() {
             Suivre les fichiers ingeres, la qualite des validations et les sources les plus actives.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Cette vue utilise les statistiques consolidees du backend pour suivre la qualite des validations.
+            Les statistiques pour suivre la qualite des validations.
           </p>
           {statsQuery.isError && (
             <p className="mt-3 text-sm text-destructive">
@@ -179,7 +177,7 @@ export function DashboardHome() {
           <div>
             <h2 className="text-base font-semibold">Sources recentes</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {search ? 'Resultats correspondant a la recherche.' : 'Dernieres sources chargees depuis le backend.'}
+              {search ? 'Resultats correspondant a la recherche.' : 'Dernieres sources chargees.'}
             </p>
           </div>
           <Link className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm hover:bg-muted" href="/sources">
@@ -311,7 +309,7 @@ function MostActiveSources({ sources }: { sources: DashboardActiveSource[] }) {
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
               <span>Succes: {source.successRate}%</span>
-              <span>Erreurs: {source.invalidRows}</span>
+              <span>Lignes invalides: {source.invalidRows}</span>
             </div>
           </div>
         ))}

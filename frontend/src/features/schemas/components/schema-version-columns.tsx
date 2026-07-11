@@ -1,10 +1,12 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { CheckCircle2, Eye, Rocket } from 'lucide-react';
+import { CheckCircle2, Copy, Eye, Rocket } from 'lucide-react';
 import type { SchemaVersion } from '@/features/schemas/types/schema-version';
 
 export const getSchemaVersionColumns = (
   onView: (version: SchemaVersion) => void,
+  onDuplicate: (version: SchemaVersion) => void,
   onPublish: (version: SchemaVersion) => void,
+  isDuplicating?: boolean,
   isPublishing?: boolean
 ): ColumnDef<SchemaVersion>[] => [
   {
@@ -79,6 +81,15 @@ export const getSchemaVersionColumns = (
           >
             <Eye className="size-3.5" />
             Voir / modifier
+          </button>
+          <button
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+            disabled={isDuplicating}
+            onClick={() => onDuplicate(row.original)}
+            type="button"
+          >
+            <Copy className="size-3.5" />
+            Dupliquer
           </button>
           {!isActive && !isPublished && (
             <button
