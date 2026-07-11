@@ -11,6 +11,13 @@ Le dossier `data` contient des jeux de donnees de demonstration pour tester le p
 
 Application deployee: `https://datakontrol.vercel.app`
 
+Compte de test:
+
+```text
+Email: artefact@test.com
+Mot de passe: Artef@ct@)@^
+```
+
 ## Fonctionnalites
 
 - Authentification par email/mot de passe avec access token et refresh token.
