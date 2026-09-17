@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, Check, Database, Download, FileText, RefreshCw, Search } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
@@ -16,8 +17,11 @@ import { DataTableWithSearch } from '@/shared/components/widget/table-with-searc
 import { cn } from '@/shared/lib/utils';
 
 export function ReportsPage() {
-  const [selectedSourceId, setSelectedSourceId] = useState('');
-  const [selectedUploadId, setSelectedUploadId] = useState('');
+  const searchParams = useSearchParams();
+  const sourceIdParam = searchParams.get('sourceId');
+  const uploadIdParam = searchParams.get('uploadId');
+  const [selectedSourceId, setSelectedSourceId] = useState(sourceIdParam ?? '');
+  const [selectedUploadId, setSelectedUploadId] = useState(uploadIdParam ?? '');
   const sourcesQuery = useSources({ initialPageSize: 100 });
   const selectedSource = sourcesQuery.data?.data.find((source) => source.id === selectedSourceId);
   const uploadsQuery = useUploads({ sourceId: selectedSourceId, initialPageSize: 100 });
@@ -37,7 +41,10 @@ export function ReportsPage() {
     refetch,
   } = useUploadErrors({ sourceId: selectedSourceId, uploadId: selectedUploadId });
   const errors = data?.data ?? [];
-  const errorTotal = data?.pagination.total_elements ?? selectedUpload?.invalidRows ?? selectedUpload?.errorCount ?? errors.length;
+  const invalidRowsTotal = selectedUpload?.invalidRows ?? selectedUpload?.errorCount ?? 0;
+  const listedErrorsTotal = data?.pagination.total_elements ?? errors.length;
+  const hasDifferentErrorCounts = Boolean(selectedUpload && listedErrorsTotal !== invalidRowsTotal);
+
   const downloadValidRowsMutation = useMutation({
     mutationFn: async () => {
       if (!selectedSourceId || !selectedUploadId || !selectedUpload) {
@@ -125,7 +132,12 @@ export function ReportsPage() {
         </aside>
 
         <div className="space-y-5">
-          <ReportSummary source={selectedSource} upload={selectedUpload} totalErrors={errorTotal} />
+          <ReportSummary
+            listedErrorsTotal={listedErrorsTotal}
+            invalidRowsTotal={invalidRowsTotal}
+            source={selectedSource}
+            upload={selectedUpload}
+          />
 
           <div className="rounded-lg border bg-card p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -134,6 +146,12 @@ export function ReportsPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {selectedUpload ? getUploadFilename(selectedUpload) : 'Selectionne un upload pour consulter les erreurs.'}
                 </p>
+                {hasDifferentErrorCounts && (
+                  <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground">
+                    Les lignes invalides et les erreurs listees sont deux compteurs differents: une ligne invalide vient du resultat
+                    de traitement, tandis que ce tableau affiche les enregistrements d&apos;erreurs retournes par l&apos;API.
+                  </p>
+                )}
               </div>
               <button
                 className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
@@ -183,17 +201,20 @@ export function ReportsPage() {
 function ReportSummary({
   source,
   upload,
-  totalErrors,
+  invalidRowsTotal,
+  listedErrorsTotal,
 }: {
   source?: Source;
   upload?: UploadItem;
-  totalErrors: number;
+  invalidRowsTotal: number;
+  listedErrorsTotal: number;
 }) {
   return (
-    <section className="grid gap-4 md:grid-cols-3">
+    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <MetricCard label="Source" value={source?.name ?? '-'} />
       <MetricCard label="Fichier" value={upload ? getUploadFilename(upload) : '-'} />
-      <MetricCard label="Erreurs" value={String(totalErrors ?? 0)} tone={totalErrors > 0 ? 'danger' : 'default'} />
+      <MetricCard label="Lignes invalides" value={String(invalidRowsTotal ?? 0)} tone={invalidRowsTotal > 0 ? 'danger' : 'default'} />
+      <MetricCard label="Erreurs listees" value={String(listedErrorsTotal ?? 0)} tone={listedErrorsTotal > 0 ? 'danger' : 'default'} />
     </section>
   );
 }

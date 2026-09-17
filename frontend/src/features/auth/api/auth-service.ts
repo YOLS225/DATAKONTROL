@@ -1,10 +1,13 @@
 import { axiosInstance } from '@/shared/api/axios-instance';
 import type {
   AuthSessionResponse,
+  ForgotPasswordPayload,
+  ForgotPasswordResponse,
   LoginPayload,
   LogoutPayload,
   RefreshPayload,
   RegisterPayload,
+  ResetPasswordPayload,
 } from '@/features/auth/types/auth';
 
 class AuthService {
@@ -22,6 +25,14 @@ class AuthService {
 
   async logout(data: LogoutPayload) {
     return axiosInstance.post('/auth/logout', data);
+  }
+
+  async forgotPassword(data: ForgotPasswordPayload) {
+    return axiosInstance.post<ForgotPasswordResponse>('/auth/forgot-password', data);
+  }
+
+  async resetPassword(data: ResetPasswordPayload) {
+    return axiosInstance.post<void>('/auth/reset-password', data);
   }
 }
 

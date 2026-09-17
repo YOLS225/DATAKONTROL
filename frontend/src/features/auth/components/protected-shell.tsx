@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { authService } from '@/features/auth/api/auth-service';
-import { UploadStatusListener } from '@/features/uploads/components/upload-status-listener';
+import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import Layout from '@/shared/components/widget/layout/layout';
 import { useUserStore } from '@/shared/stores/user-store';
 
@@ -41,8 +41,15 @@ export function ProtectedShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Layout isLoggingOut={logoutMutation.isPending} onLogout={() => logoutMutation.mutate()}>
-      <UploadStatusListener />
+    <Layout
+      header={
+        <div className="flex items-center justify-end">
+          <NotificationBell />
+        </div>
+      }
+      isLoggingOut={logoutMutation.isPending}
+      onLogout={() => logoutMutation.mutate()}
+    >
       {children}
     </Layout>
   );

@@ -4,6 +4,14 @@ export type UploadErrorType =
   | 'REQUIRED'
   | 'INVALID_TYPE'
   | 'DUPLICATE_ROW'
+  | 'MIN_LENGTH'
+  | 'MAX_LENGTH'
+  | 'INVALID_FORMAT'
+  | 'NOT_ALLOWED_VALUE'
+  | 'MIN_VALUE'
+  | 'MAX_VALUE'
+  | 'MIN_DATE'
+  | 'MAX_DATE'
   | string;
 
 export type UploadErrorItem = {

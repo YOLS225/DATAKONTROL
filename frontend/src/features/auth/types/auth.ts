@@ -19,4 +19,17 @@ export type LogoutPayload = {
   refreshToken: string;
 };
 
+export type ForgotPasswordPayload = {
+  email: string;
+};
+
+export type ResetPasswordPayload = {
+  resetToken: string;
+  password: string;
+};
+
+export type ForgotPasswordResponse = {
+  resetToken?: string;
+};
+
 export type AuthSessionResponse = UserSession;

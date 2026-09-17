@@ -19,7 +19,3 @@ export function unwrapUpload(payload: UploadResponse | UploadItem | { data?: Upl
 
   return null;
 }
-
-export function isRunningUploadStatus(status?: string) {
-  return status === 'PENDING' || status === 'PROCESSING';
-}

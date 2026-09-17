@@ -1,10 +1,22 @@
 export type SchemaColumnType = 'string' | 'integer' | 'decimal' | 'boolean' | 'date' | 'datetime';
 
+export type SchemaColumnConstraints = {
+  minLength?: number;
+  maxLength?: number;
+  format?: 'email' | 'phone' | 'url';
+  allowedValues?: string[];
+  min?: number;
+  max?: number;
+  minDate?: string;
+  maxDate?: string;
+};
+
 export type SchemaColumn = {
   id: string;
   name: string;
   type: SchemaColumnType;
   required: boolean;
+  constraints?: SchemaColumnConstraints;
 };
 
 export type SchemaDefinition = {

@@ -30,7 +30,21 @@ export type DashboardActiveSource = {
 };
 
 export type DashboardErrorType = {
-  type: 'MISSING_COLUMN' | 'UNKNOWN_COLUMN' | 'REQUIRED' | 'INVALID_TYPE' | string;
+  type:
+    | 'MISSING_COLUMN'
+    | 'UNKNOWN_COLUMN'
+    | 'REQUIRED'
+    | 'INVALID_TYPE'
+    | 'DUPLICATE_ROW'
+    | 'MIN_LENGTH'
+    | 'MAX_LENGTH'
+    | 'INVALID_FORMAT'
+    | 'NOT_ALLOWED_VALUE'
+    | 'MIN_VALUE'
+    | 'MAX_VALUE'
+    | 'MIN_DATE'
+    | 'MAX_DATE'
+    | string;
   label: string;
   count: number;
 };

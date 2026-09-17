@@ -16,6 +16,7 @@ import {
   type SchemaVersionFormData,
 } from '@/features/schemas/schemas/schema-version-schema';
 import type { SchemaVersion } from '@/features/schemas/types/schema-version';
+import { sanitizeSchemaColumn } from '@/features/schemas/utils/schema-constraints';
 import { useSources } from '@/features/sources/hooks/use-sources';
 import type { Source } from '@/features/sources/types/source';
 import { DataTableWithSearch } from '@/shared/components/widget/table-with-search/DataTable';
@@ -193,6 +194,7 @@ function SchemaDraftForm({ sourceId }: { sourceId: string }) {
     reset,
   } = useForm<SchemaVersionFormData>({
     resolver: zodResolver(schemaVersionSchema),
+    shouldUnregister: true,
     defaultValues: {
       columns: [
         {
@@ -215,7 +217,7 @@ function SchemaDraftForm({ sourceId }: { sourceId: string }) {
       return (
         await schemaVersionService.createDraft(sourceId, {
           schemaDefinition: {
-            columns: data.columns,
+            columns: data.columns.map(sanitizeSchemaColumn),
           },
         })
       ).data;
@@ -248,7 +250,7 @@ function SchemaDraftForm({ sourceId }: { sourceId: string }) {
         </button>
       </div>
 
-      <SchemaColumnsFields errors={errors} fields={fields} register={register} remove={remove} />
+      <SchemaColumnsFields control={control} errors={errors} fields={fields} register={register} remove={remove} />
 
       <button
         className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"

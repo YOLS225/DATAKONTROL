@@ -18,6 +18,7 @@ import {
   type SchemaVersionFormData,
 } from '@/features/schemas/schemas/schema-version-schema';
 import type { SchemaVersion } from '@/features/schemas/types/schema-version';
+import { sanitizeSchemaColumn } from '@/features/schemas/utils/schema-constraints';
 import { ConfirmDialog } from '@/shared/components/widget/confirm-dialog';
 import { cn } from '@/shared/lib/utils';
 
@@ -93,6 +94,7 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
     reset,
   } = useForm<SchemaVersionFormData>({
     resolver: zodResolver(schemaVersionSchema),
+    shouldUnregister: true,
     defaultValues: {
       columns: version.schemaDefinition?.columns?.length ? version.schemaDefinition.columns : [emptyColumn],
     },
@@ -101,9 +103,10 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
 
   const updateMutation = useMutation({
     mutationFn: async (data: SchemaVersionFormData) => {
+      const columns = data.columns.map(sanitizeSchemaColumn);
       const response = await schemaVersionService.updateDraft(sourceId, version.id, {
         schemaDefinition: {
-          columns: data.columns,
+          columns,
         },
       });
       const updatedVersion = unwrapSchemaVersion(response.data);
@@ -111,7 +114,7 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
       return updatedVersion ?? {
         ...version,
         schemaDefinition: {
-          columns: data.columns,
+          columns,
         },
       };
     },
@@ -214,6 +217,7 @@ function SchemaVersionDetailForm({ sourceId, version }: { sourceId: string; vers
           <fieldset disabled={isPublished || updateMutation.isPending}>
             <SchemaColumnsFields
               errors={errors}
+              control={control}
               fields={fields}
               readonly={isPublished}
               register={register}

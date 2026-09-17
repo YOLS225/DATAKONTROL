@@ -28,23 +28,27 @@ import {
 import { cn } from '@/shared/lib/utils';
 import { useUserStore } from '@/shared/stores/user-store';
 
+type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
+
 export function LoginSection() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { session, setSession } = useUserStore();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<AuthMode>('login');
   const {
     register,
     formState: { errors },
     handleSubmit,
     reset,
     setError,
+    setValue,
   } = useForm<AuthFormData>({
     resolver: zodResolver(authFormSchema),
     defaultValues: {
       name: '',
       email: '',
       password: '',
+      resetToken: '',
     },
   });
 
@@ -56,6 +60,28 @@ export function LoginSection() {
 
   const authMutation = useMutation({
     mutationFn: async (data: AuthFormData) => {
+      if (mode === 'forgot') {
+        return {
+          mode: 'forgot' as const,
+          response: (await authService.forgotPassword({ email: data.email ?? '' })).data,
+        };
+      }
+
+      if (mode === 'reset') {
+        const resetToken = data.resetToken?.trim();
+
+        if (!resetToken) {
+          throw new Error('Le token de reset est requis');
+        }
+
+        await authService.resetPassword({
+          resetToken,
+          password: data.password ?? '',
+        });
+
+        return { mode: 'reset' as const };
+      }
+
       if (mode === 'register') {
         const name = data.name?.trim();
 
@@ -65,15 +91,15 @@ export function LoginSection() {
 
         await authService.register({
           name,
-          email: data.email,
-          password: data.password,
+          email: data.email ?? '',
+          password: data.password ?? '',
         });
         return { mode: 'register' as const };
       }
 
       return {
         mode: 'login' as const,
-        session: (await authService.login({ email: data.email, password: data.password })).data,
+        session: (await authService.login({ email: data.email ?? '', password: data.password ?? '' })).data,
       };
     },
     onSuccess: (result) => {
@@ -81,12 +107,33 @@ export function LoginSection() {
 
       if (result.mode === 'register') {
         setMode('login');
-        toast.success('Compte cree. Tu peux maintenant te connecter.');
+        toast.success('Compte cree');
+        return;
+      }
+
+      if (result.mode === 'forgot') {
+        const resetToken = result.response.resetToken ?? '';
+
+        toast.success('Demande envoyee');
+
+        if (resetToken) {
+          setValue('resetToken', resetToken);
+          setMode('reset');
+          return;
+        }
+
+        setMode('login');
+        return;
+      }
+
+      if (result.mode === 'reset') {
+        setMode('login');
+        toast.success('Mot de passe reinitialise');
         return;
       }
 
       setSession(result.session);
-      toast.success('Session ouverte');
+      toast.success('Connecte');
       router.replace('/dashboard');
     },
     onError: (error) => {
@@ -95,8 +142,23 @@ export function LoginSection() {
   });
 
   const submitAuth = (data: AuthFormData) => {
+    if (mode !== 'reset' && !data.email?.trim()) {
+      setError('email', { message: "L'email est requis" });
+      return;
+    }
+
+    if (mode !== 'forgot' && !data.password?.trim()) {
+      setError('password', { message: 'Le mot de passe est requis' });
+      return;
+    }
+
     if (mode === 'register' && !data.name?.trim()) {
       setError('name', { message: 'Le nom est requis' });
+      return;
+    }
+
+    if (mode === 'reset' && !data.resetToken?.trim()) {
+      setError('resetToken', { message: 'Le token de reset est requis' });
       return;
     }
 
@@ -129,51 +191,42 @@ export function LoginSection() {
 
       <section className="mx-auto grid min-h-screen max-w-7xl gap-8 px-5 pb-8 pt-28 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-center lg:px-8">
         <div
-          className="relative flex min-h-[620px] flex-col justify-between overflow-hidden rounded-lg border bg-card bg-cover bg-center text-white shadow-sm"
+          className="relative hidden min-h-[620px] flex-col justify-between overflow-hidden rounded-lg border bg-card bg-cover bg-center text-white shadow-sm lg:flex"
           style={{
             backgroundImage:
-              "linear-gradient(120deg, rgb(10 20 28 / 0.90), rgb(10 20 28 / 0.68) 52%, rgb(10 20 28 / 0.38)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1600&q=85')",
+              "linear-gradient(120deg, rgb(10 20 28 / 0.88), rgb(10 20 28 / 0.64) 54%, rgb(10 20 28 / 0.32)), url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1600&q=85')",
           }}
         >
-          <div className="p-6 md:p-8">
+          <div className="p-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/12 px-3 py-1 text-sm text-white/82 backdrop-blur">
               <ShieldCheck className="size-4 text-primary" />
-              Plateforme MVP de controle data
+              Controle de donnees
             </div>
-            <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight md:text-6xl">
+            <h1 className="mt-6 max-w-3xl text-5xl font-semibold leading-tight">
               Valide tes fichiers avec des schemas clairs.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/78">
-              DATAKONTROL centralise les sources, les versions de schemas et les validations de fichiers pour garder
-              une chaine de controle lisible.
+              Centralise tes sources, publie les versions de schemas et suis les erreurs de validation au meme endroit.
             </p>
           </div>
 
-          <div className="border-y border-white/14 bg-black/18 px-6 py-5 backdrop-blur md:px-8">
+          <div className="border-y border-white/14 bg-black/18 px-8 py-5 backdrop-blur">
             <div className="grid gap-3 md:grid-cols-3">
-              <FeatureItem icon={Database} label="Sources" text="Referentiel des donnees a controler" />
-              <FeatureItem icon={Layers3} label="Schemas" text="Colonnes attendues et version active" />
-              <FeatureItem icon={CheckCircle2} label="Validation" text="Traitement asynchrone des uploads" />
+              <FeatureItem icon={Database} label="Sources" text="Organiser les fichiers a controler" />
+              <FeatureItem icon={Layers3} label="Schemas" text="Definir les colonnes attendues" />
+              <FeatureItem icon={CheckCircle2} label="Validation" text="Voir les erreurs apres traitement" />
             </div>
-          </div>
-
-          <div className="grid gap-px bg-white/14 md:grid-cols-3">
-            <StatBlock label="Auth" value="JWT" />
-            <StatBlock label="Cache" value="Query" />
-            <StatBlock label="UI" value="shadcn" />
           </div>
         </div>
 
-        <aside className="rounded-lg border bg-card/92 p-5 text-card-foreground shadow-sm backdrop-blur md:p-6 dark:bg-card/88">
+        <aside className="w-full rounded-lg border bg-card p-5 text-card-foreground shadow-sm md:p-6">
           <div>
             <p className="text-sm text-muted-foreground">Acces securise</p>
             <h2 className="mt-2 text-2xl font-semibold">
-              {mode === 'login' ? 'Connecte-toi' : 'Cree ton compte'}
+              {getAuthTitle(mode)}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {mode === 'login'
-                ? 'Retrouve ton workspace et continue le controle des donnees.'
-                : 'Demarre avec une session utilisateur persistante.'}
+              {getAuthDescription(mode)}
             </p>
           </div>
 
@@ -211,23 +264,31 @@ export function LoginSection() {
               </Field>
             )}
 
-            <Field error={errors.email?.message} icon={<Mail className="size-4" />} label="Email">
-              <input
-                className="dk-input pl-10"
-                placeholder="Ex: awa@example.com"
-                type="email"
-                {...register('email')}
-              />
-            </Field>
+            {mode !== 'reset' && (
+              <Field error={errors.email?.message} icon={<Mail className="size-4" />} label="Email">
+                <input
+                  className="dk-input pl-10"
+                  placeholder="Ex: awa@example.com"
+                  type="email"
+                  {...register('email')}
+                />
+              </Field>
+            )}
 
-            <Field error={errors.password?.message} icon={<Lock className="size-4" />} label="Mot de passe">
-              <input
-                className="dk-input pl-10"
-                placeholder="Saisis ton mot de passe"
-                type="password"
-                {...register('password')}
-              />
-            </Field>
+            {mode === 'reset' && (
+              <input type="hidden" {...register('resetToken')} />
+            )}
+
+            {mode !== 'forgot' && (
+              <Field error={errors.password?.message} icon={<Lock className="size-4" />} label="Mot de passe">
+                <input
+                  className="dk-input pl-10"
+                  placeholder={mode === 'reset' ? 'Nouveau mot de passe' : 'Saisis ton mot de passe'}
+                  type="password"
+                  {...register('password')}
+                />
+              </Field>
+            )}
 
             <button
               className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
@@ -235,9 +296,21 @@ export function LoginSection() {
               type="submit"
             >
               {authMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-              {mode === 'login' ? 'Se connecter' : 'Creer le compte'}
+              {getSubmitLabel(mode)}
             </button>
           </form>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+            {mode === 'login' ? (
+              <button className="text-muted-foreground hover:text-foreground" onClick={() => setMode('forgot')} type="button">
+                Mot de passe oublie
+              </button>
+            ) : (
+              <button className="text-muted-foreground hover:text-foreground" onClick={() => setMode('login')} type="button">
+                Retour connexion
+              </button>
+            )}
+          </div>
         </aside>
       </section>
     </main>
@@ -269,6 +342,54 @@ function Field({
   );
 }
 
+function getAuthTitle(mode: AuthMode) {
+  if (mode === 'register') {
+    return 'Cree ton compte';
+  }
+
+  if (mode === 'forgot') {
+    return 'Reset password';
+  }
+
+  if (mode === 'reset') {
+    return 'Nouveau mot de passe';
+  }
+
+  return 'Connecte-toi';
+}
+
+function getAuthDescription(mode: AuthMode) {
+  if (mode === 'register') {
+    return 'Demarre avec une session utilisateur persistante.';
+  }
+
+  if (mode === 'forgot') {
+    return 'Indique ton email pour recevoir les instructions.';
+  }
+
+  if (mode === 'reset') {
+    return 'Choisis un nouveau mot de passe.';
+  }
+
+  return 'Retrouve ton workspace et continue le controle des donnees.';
+}
+
+function getSubmitLabel(mode: AuthMode) {
+  if (mode === 'register') {
+    return 'Creer le compte';
+  }
+
+  if (mode === 'forgot') {
+    return 'Demander le reset';
+  }
+
+  if (mode === 'reset') {
+    return 'Reinitialiser';
+  }
+
+  return 'Se connecter';
+}
+
 function FeatureItem({
   icon: Icon,
   label,
@@ -283,15 +404,6 @@ function FeatureItem({
       <Icon className="size-5 text-primary" />
       <p className="mt-3 text-sm font-semibold">{label}</p>
       <p className="mt-1 text-xs leading-5 text-white/72">{text}</p>
-    </div>
-  );
-}
-
-function StatBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-black/16 p-5 backdrop-blur">
-      <p className="text-xs uppercase text-white/62">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
     </div>
   );
 }

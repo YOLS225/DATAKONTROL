@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  FileText,
   Moon,
   Palette,
   ShieldCheck,
@@ -83,18 +82,6 @@ export function SettingsPage() {
           </div>
         </SettingsCard>
 
-        <SettingsCard
-          description="Preferences d'affichage utilisees dans les tableaux et les rapports."
-          icon={FileText}
-          title="Affichage des donnees"
-        >
-          <div className="grid gap-3 md:grid-cols-2">
-            <PreferenceLine label="Pagination par defaut" value="5 lignes" />
-            <PreferenceLine label="Recherche" value="Appliquee apres saisie" />
-            <PreferenceLine label="Dates" value="Format francais" />
-            <PreferenceLine label="Rapports" value="Erreurs groupees par upload" />
-          </div>
-        </SettingsCard>
       </section>
     </div>
   );
@@ -134,15 +121,6 @@ function ReadonlyField({ label, value }: { label: string; value: string }) {
       <div className="mt-2 flex min-h-10 items-center rounded-md border bg-muted/35 px-3 text-sm">
         <span className="min-w-0 truncate text-muted-foreground">{value}</span>
       </div>
-    </div>
-  );
-}
-
-function PreferenceLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border bg-background px-3 py-2">
-      <p className="text-sm font-medium">{label}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{value}</p>
     </div>
   );
 }

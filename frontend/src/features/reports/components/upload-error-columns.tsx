@@ -24,6 +24,38 @@ const errorTypeLabels: Record<string, { label: string; className: string }> = {
     label: 'Doublon',
     className: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-300',
   },
+  MIN_LENGTH: {
+    label: 'Texte trop court',
+    className: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
+  },
+  MAX_LENGTH: {
+    label: 'Texte trop long',
+    className: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
+  },
+  INVALID_FORMAT: {
+    label: 'Format invalide',
+    className: 'bg-primary/10 text-primary',
+  },
+  NOT_ALLOWED_VALUE: {
+    label: 'Valeur non autorisee',
+    className: 'bg-violet-500/10 text-violet-700 dark:text-violet-300',
+  },
+  MIN_VALUE: {
+    label: 'Valeur trop basse',
+    className: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
+  },
+  MAX_VALUE: {
+    label: 'Valeur trop haute',
+    className: 'bg-orange-500/10 text-orange-700 dark:text-orange-300',
+  },
+  MIN_DATE: {
+    label: 'Date trop ancienne',
+    className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  },
+  MAX_DATE: {
+    label: 'Date trop recente',
+    className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  },
 };
 
 export const uploadErrorColumns: ColumnDef<UploadErrorItem>[] = [

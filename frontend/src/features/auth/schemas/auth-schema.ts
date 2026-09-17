@@ -11,6 +11,9 @@ export const registerSchema = loginSchema.extend({
 
 export const authFormSchema = loginSchema.extend({
   name: z.string().max(80, 'Le nom est trop long').optional(),
+  email: z.string().email('Saisis un email valide').or(z.literal('')).optional(),
+  password: z.string().optional(),
+  resetToken: z.string().optional(),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

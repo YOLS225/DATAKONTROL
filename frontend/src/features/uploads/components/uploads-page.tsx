@@ -10,9 +10,8 @@ import { uploadService } from '@/features/uploads/api/upload-service';
 import { getUploadColumns } from '@/features/uploads/components/upload-columns';
 import { useUploads } from '@/features/uploads/hooks/use-uploads';
 import { uploadSchema, type UploadFormData } from '@/features/uploads/schemas/upload-schema';
-import { useUploadWatchStore } from '@/features/uploads/stores/upload-watch-store';
 import type { UploadItem } from '@/features/uploads/types/upload';
-import { getUploadFilename, unwrapUpload } from '@/features/uploads/utils/upload-utils';
+import { getUploadFilename } from '@/features/uploads/utils/upload-utils';
 import { useSources } from '@/features/sources/hooks/use-sources';
 import type { Source } from '@/features/sources/types/source';
 import { DataTableWithSearch } from '@/shared/components/widget/table-with-search/DataTable';
@@ -156,7 +155,6 @@ export function UploadsPage() {
 
 function UploadFileForm({ sourceId }: { sourceId: string }) {
   const queryClient = useQueryClient();
-  const addWatch = useUploadWatchStore((state) => state.addWatch);
   const [selectedFileName, setSelectedFileName] = useState('');
   const {
     formState: { errors },
@@ -175,21 +173,11 @@ function UploadFileForm({ sourceId }: { sourceId: string }) {
 
       return (await uploadService.uploadFile(sourceId, data.file)).data;
     },
-    onSuccess: (response) => {
-      const upload = unwrapUpload(response);
-
-      if (upload?.id) {
-        addWatch({
-          sourceId: upload.sourceId ?? sourceId,
-          uploadId: upload.id,
-          fileName: getUploadFilename(upload),
-          status: upload.status ?? 'PENDING',
-        });
-      }
-
+    onSuccess: () => {
       reset();
       setSelectedFileName('');
       queryClient.invalidateQueries({ queryKey: ['uploads', sourceId] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast.success('Upload recu, traitement en cours');
     },
     onError: (uploadError) => {
