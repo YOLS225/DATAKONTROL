@@ -137,7 +137,9 @@ export class ValidateUploadUseCase {
     }
 
     const rowErrors = this.validateRow(uploadId, row, definition);
-    rowErrors.push(...this.validateDuplicateRow(uploadId, row, definition, state));
+    rowErrors.push(
+      ...this.validateDuplicateRow(uploadId, row, definition, state),
+    );
     state.errorBatch.push(...rowErrors);
 
     if (state.invalidHeaders || rowErrors.length > 0) {
@@ -287,8 +289,205 @@ export class ValidateUploadUseCase {
             value,
           ),
         );
+        continue;
       }
+      errors.push(...this.validateConstraints(uploadId, row, column, value));
     }
+    return errors;
+  }
+
+  private validateConstraints(
+    uploadId: string,
+    row: ParsedRow,
+    column: SchemaColumn,
+    value: string,
+  ): ValidationErrorEntity[] {
+    if (value.length === 0 || !column.constraints) return [];
+
+    return [
+      ...this.validateTextConstraints(uploadId, row, column, value),
+      ...this.validateAllowedValues(uploadId, row, column, value),
+      ...this.validateNumericConstraints(uploadId, row, column, value),
+      ...this.validateDateConstraints(uploadId, row, column, value),
+    ];
+  }
+
+  private validateTextConstraints(
+    uploadId: string,
+    row: ParsedRow,
+    column: SchemaColumn,
+    value: string,
+  ): ValidationErrorEntity[] {
+    const constraints = column.constraints;
+    if (!constraints || column.type !== "string") return [];
+
+    const errors: ValidationErrorEntity[] = [];
+    if (
+      constraints.minLength !== undefined &&
+      value.length < constraints.minLength
+    ) {
+      errors.push(
+        this.error(
+          uploadId,
+          row.rowNumber,
+          column.name,
+          "MIN_LENGTH",
+          `Value must contain at least ${constraints.minLength} character(s)`,
+          value,
+        ),
+      );
+    }
+
+    if (
+      constraints.maxLength !== undefined &&
+      value.length > constraints.maxLength
+    ) {
+      errors.push(
+        this.error(
+          uploadId,
+          row.rowNumber,
+          column.name,
+          "MAX_LENGTH",
+          `Value must contain at most ${constraints.maxLength} character(s)`,
+          value,
+        ),
+      );
+    }
+
+    if (
+      constraints.format !== undefined &&
+      !this.hasValidFormat(value, constraints.format)
+    ) {
+      errors.push(
+        this.error(
+          uploadId,
+          row.rowNumber,
+          column.name,
+          "INVALID_FORMAT",
+          `Value must match format ${constraints.format}`,
+          value,
+        ),
+      );
+    }
+
+    return errors;
+  }
+
+  private validateAllowedValues(
+    uploadId: string,
+    row: ParsedRow,
+    column: SchemaColumn,
+    value: string,
+  ): ValidationErrorEntity[] {
+    const allowedValues = column.constraints?.allowedValues;
+    if (!allowedValues || allowedValues.includes(value)) return [];
+
+    return [
+      this.error(
+        uploadId,
+        row.rowNumber,
+        column.name,
+        "NOT_ALLOWED_VALUE",
+        `Value must be one of: ${allowedValues.join(", ")}`,
+        value,
+      ),
+    ];
+  }
+
+  private validateNumericConstraints(
+    uploadId: string,
+    row: ParsedRow,
+    column: SchemaColumn,
+    value: string,
+  ): ValidationErrorEntity[] {
+    const constraints = column.constraints;
+    if (
+      !constraints ||
+      (column.type !== "integer" && column.type !== "decimal")
+    ) {
+      return [];
+    }
+
+    const numericValue = Number(value);
+    const errors: ValidationErrorEntity[] = [];
+    if (constraints.min !== undefined && numericValue < constraints.min) {
+      errors.push(
+        this.error(
+          uploadId,
+          row.rowNumber,
+          column.name,
+          "MIN_VALUE",
+          `Value must be greater than or equal to ${constraints.min}`,
+          value,
+        ),
+      );
+    }
+
+    if (constraints.max !== undefined && numericValue > constraints.max) {
+      errors.push(
+        this.error(
+          uploadId,
+          row.rowNumber,
+          column.name,
+          "MAX_VALUE",
+          `Value must be less than or equal to ${constraints.max}`,
+          value,
+        ),
+      );
+    }
+
+    return errors;
+  }
+
+  private validateDateConstraints(
+    uploadId: string,
+    row: ParsedRow,
+    column: SchemaColumn,
+    value: string,
+  ): ValidationErrorEntity[] {
+    const constraints = column.constraints;
+    if (
+      !constraints ||
+      (column.type !== "date" && column.type !== "datetime")
+    ) {
+      return [];
+    }
+
+    const date = this.toComparableDate(value, column.type);
+    const minDate = constraints.minDate
+      ? this.toComparableDate(constraints.minDate, column.type)
+      : null;
+    const maxDate = constraints.maxDate
+      ? this.toComparableDate(constraints.maxDate, column.type)
+      : null;
+    const errors: ValidationErrorEntity[] = [];
+
+    if (minDate && date.getTime() < minDate.getTime()) {
+      errors.push(
+        this.error(
+          uploadId,
+          row.rowNumber,
+          column.name,
+          "MIN_DATE",
+          `Date must be greater than or equal to ${constraints.minDate}`,
+          value,
+        ),
+      );
+    }
+
+    if (maxDate && date.getTime() > maxDate.getTime()) {
+      errors.push(
+        this.error(
+          uploadId,
+          row.rowNumber,
+          column.name,
+          "MAX_DATE",
+          `Date must be less than or equal to ${constraints.maxDate}`,
+          value,
+        ),
+      );
+    }
+
     return errors;
   }
 
@@ -319,6 +518,31 @@ export class ValidateUploadUseCase {
     return (
       !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value)
     );
+  }
+
+  private hasValidFormat(
+    value: string,
+    format: NonNullable<SchemaColumn["constraints"]>["format"],
+  ): boolean {
+    switch (format) {
+      case "email":
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      case "phone":
+        return /^\+?[0-9\s().-]{8,20}$/.test(value);
+      case "url":
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
+      default:
+        return false;
+    }
+  }
+
+  private toComparableDate(value: string, type: SchemaColumn["type"]): Date {
+    return new Date(type === "date" ? `${value}T00:00:00.000Z` : value);
   }
 
   private error(

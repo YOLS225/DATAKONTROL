@@ -6,5 +6,7 @@ export class User {
     public readonly passwordHash: string,
     public readonly createdAt: Date = new Date(),
     public readonly refreshTokenHash: string | null = null,
+    public readonly passwordResetTokenHash: string | null = null,
+    public readonly passwordResetTokenExpiresAt: Date | null = null,
   ) {}
 }

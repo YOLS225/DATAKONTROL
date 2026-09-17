@@ -55,7 +55,8 @@ export const ModelName = {
   Source: 'Source',
   SchemaVersion: 'SchemaVersion',
   Upload: 'Upload',
-  ValidationError: 'ValidationError'
+  ValidationError: 'ValidationError',
+  Notification: 'Notification'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -80,6 +81,8 @@ export const UserScalarFieldEnum = {
   password: 'password',
   name: 'name',
   refreshTokenHash: 'refreshTokenHash',
+  passwordResetTokenHash: 'passwordResetTokenHash',
+  passwordResetTokenExpiresAt: 'passwordResetTokenExpiresAt',
   createdAt: 'createdAt'
 } as const
 
@@ -146,6 +149,20 @@ export const ValidationErrorScalarFieldEnum = {
 export type ValidationErrorScalarFieldEnum = (typeof ValidationErrorScalarFieldEnum)[keyof typeof ValidationErrorScalarFieldEnum]
 
 
+export const NotificationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  title: 'title',
+  message: 'message',
+  data: 'data',
+  readAt: 'readAt',
+  createdAt: 'createdAt'
+} as const
+
+export type NotificationScalarFieldEnum = (typeof NotificationScalarFieldEnum)[keyof typeof NotificationScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -159,6 +176,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {

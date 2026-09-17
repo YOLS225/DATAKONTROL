@@ -152,6 +152,97 @@ describe("ValidateUploadUseCase", () => {
     );
   });
 
+  it("persists business constraint validation errors", async () => {
+    schemas.findById.mockResolvedValue(
+      new SchemaVersion(
+        "schema-id",
+        "source-id",
+        1,
+        {
+          columns: [
+            {
+              id: "email",
+              name: "email",
+              type: "string",
+              required: true,
+              constraints: { format: "email", maxLength: 20 },
+            },
+            {
+              id: "status",
+              name: "status",
+              type: "string",
+              required: true,
+              constraints: { allowedValues: ["pending", "paid"] },
+            },
+            {
+              id: "amount",
+              name: "amount",
+              type: "decimal",
+              required: true,
+              constraints: { min: 0, max: 100 },
+            },
+            {
+              id: "created-at",
+              name: "created_at",
+              type: "date",
+              required: true,
+              constraints: { minDate: "2026-01-01", maxDate: "2026-12-31" },
+            },
+          ],
+        },
+        "user-id",
+        true,
+        new Date(),
+        new Date(),
+      ),
+    );
+    parser.parse.mockReturnValue(
+      rows([
+        {
+          rowNumber: 2,
+          values: {
+            email: "not-an-email-address",
+            status: "cancelled",
+            amount: "120",
+            created_at: "2025-12-31",
+          },
+        },
+      ]),
+    );
+
+    await useCase.execute(upload.id);
+
+    expect(errors.saveMany).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          rowNumber: 2,
+          columnName: "email",
+          errorType: "INVALID_FORMAT",
+        }),
+        expect.objectContaining({
+          rowNumber: 2,
+          columnName: "status",
+          errorType: "NOT_ALLOWED_VALUE",
+        }),
+        expect.objectContaining({
+          rowNumber: 2,
+          columnName: "amount",
+          errorType: "MAX_VALUE",
+        }),
+        expect.objectContaining({
+          rowNumber: 2,
+          columnName: "created_at",
+          errorType: "MIN_DATE",
+        }),
+      ]),
+    );
+    expect(uploads.complete).toHaveBeenCalledWith(
+      upload.id,
+      { totalRows: 1, validRows: 0, invalidRows: 1 },
+      expect.any(Date),
+    );
+  });
+
   it("does not reprocess a terminal upload", async () => {
     uploads.findById.mockResolvedValue(
       new Upload(

@@ -7,6 +7,8 @@ import { GetUploadsUseCase } from "../application/use-cases/uploads/get-uploads.
 import { GetUploadFileUseCase } from "../application/use-cases/uploads/get-upload-file.usecase.js";
 import { GetValidUploadRowsUseCase } from "../application/use-cases/uploads/get-valid-upload-rows.usecase.js";
 import { GetValidationErrorsUseCase } from "../application/use-cases/uploads/get-validation-errors.usecase.js";
+import { NotifyUploadCompletedUseCase } from "../application/use-cases/notifications/notify-upload-completed.usecase.js";
+import { NotifyUploadFailedUseCase } from "../application/use-cases/notifications/notify-upload-failed.usecase.js";
 import {
   SCHEMA_VERSION_REPOSITORY,
   type SchemaVersionRepository,
@@ -32,6 +34,10 @@ import {
   type FileStorage,
 } from "../domain/ports/services/file-storage.js";
 import {
+  NOTIFICATION_REPOSITORY,
+  type NotificationRepository,
+} from "../domain/ports/repositories/notification.repository.js";
+import {
   UPLOAD_QUEUE,
   type UploadQueue,
 } from "../domain/ports/services/upload-queue.js";
@@ -47,9 +53,10 @@ import { UploadController } from "../presentation/controllers/upload.controller.
 import { SchemaModule } from "./schema.module.js";
 import { SourceModule } from "./source.module.js";
 import { UserModule } from "./user.module.js";
+import { NotificationModule } from "./notification.module.js";
 
 @Module({
-  imports: [UserModule, SourceModule, SchemaModule],
+  imports: [UserModule, SourceModule, SchemaModule, NotificationModule],
   controllers: [UploadController],
   providers: [
     {
@@ -172,13 +179,44 @@ import { UserModule } from "./user.module.js";
       ) => new GetValidationErrorsUseCase(sources, uploads, errors),
     },
     {
+      provide: NotifyUploadCompletedUseCase,
+      inject: [UPLOAD_REPOSITORY, NOTIFICATION_REPOSITORY],
+      useFactory: (
+        uploads: UploadRepository,
+        notifications: NotificationRepository,
+      ) => new NotifyUploadCompletedUseCase(uploads, notifications),
+    },
+    {
+      provide: NotifyUploadFailedUseCase,
+      inject: [UPLOAD_REPOSITORY, NOTIFICATION_REPOSITORY],
+      useFactory: (
+        uploads: UploadRepository,
+        notifications: NotificationRepository,
+      ) => new NotifyUploadFailedUseCase(uploads, notifications),
+    },
+    {
       provide: BullMqUploadWorker,
-      inject: [ConfigService, ValidateUploadUseCase, UPLOAD_REPOSITORY],
+      inject: [
+        ConfigService,
+        ValidateUploadUseCase,
+        UPLOAD_REPOSITORY,
+        NotifyUploadCompletedUseCase,
+        NotifyUploadFailedUseCase,
+      ],
       useFactory: (
         config: ConfigService,
         validateUpload: ValidateUploadUseCase,
         uploads: UploadRepository,
-      ) => new BullMqUploadWorker(config, validateUpload, uploads),
+        notifyUploadCompleted: NotifyUploadCompletedUseCase,
+        notifyUploadFailed: NotifyUploadFailedUseCase,
+      ) =>
+        new BullMqUploadWorker(
+          config,
+          validateUpload,
+          uploads,
+          notifyUploadCompleted,
+          notifyUploadFailed,
+        ),
     },
   ],
 })

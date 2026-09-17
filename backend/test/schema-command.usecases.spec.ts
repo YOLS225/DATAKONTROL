@@ -131,6 +131,36 @@ describe("Schema command use cases", () => {
     expect(schemas.publish).not.toHaveBeenCalled();
   });
 
+  it("rejects incompatible constraints before publication", async () => {
+    sources.findById.mockResolvedValue(source);
+    schemas.findById.mockResolvedValue(
+      new SchemaVersion(
+        draft.id,
+        source.id,
+        1,
+        {
+          columns: [
+            {
+              id: "age",
+              name: "age",
+              type: "integer",
+              required: true,
+              constraints: { minLength: 2 },
+            },
+          ],
+        },
+        source.userId,
+      ),
+    );
+    const useCase = new PublishSchemaUseCase(sources, schemas);
+
+    await expect(
+      useCase.execute(source.userId, source.id, draft.id),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(schemas.publish).not.toHaveBeenCalled();
+  });
+
   it("rejects publication when the draft changed concurrently", async () => {
     sources.findById.mockResolvedValue(source);
     schemas.findById.mockResolvedValue(draft);

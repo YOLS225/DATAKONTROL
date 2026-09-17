@@ -94,6 +94,14 @@ export class PrismaValidationErrorRepository implements ValidationErrorRepositor
       case "REQUIRED":
       case "INVALID_TYPE":
       case "DUPLICATE_ROW":
+      case "MIN_LENGTH":
+      case "MAX_LENGTH":
+      case "INVALID_FORMAT":
+      case "NOT_ALLOWED_VALUE":
+      case "MIN_VALUE":
+      case "MAX_VALUE":
+      case "MIN_DATE":
+      case "MAX_DATE":
         return errorType;
       default:
         throw new Error(`Unknown validation error type: ${errorType}`);

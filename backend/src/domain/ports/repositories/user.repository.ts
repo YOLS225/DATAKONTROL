@@ -8,6 +8,13 @@ export interface UserRepository {
     userId: string,
     refreshTokenHash: string | null,
   ): Promise<void>;
+  updatePasswordResetToken(
+    userId: string,
+    tokenHash: string | null,
+    expiresAt: Date | null,
+  ): Promise<void>;
+  updatePassword(userId: string, passwordHash: string): Promise<void>;
+  findByPasswordResetTokenHash(tokenHash: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
 }

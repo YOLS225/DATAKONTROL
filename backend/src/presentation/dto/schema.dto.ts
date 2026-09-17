@@ -6,6 +6,7 @@ import {
   IsIn,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   Max,
@@ -13,6 +14,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import type {
+  ColumnFormat,
   ColumnType,
   SchemaDefinition,
 } from "../../domain/entities/schema.entity.js";
@@ -25,6 +27,56 @@ const COLUMN_TYPES: ColumnType[] = [
   "date",
   "datetime",
 ];
+
+const COLUMN_FORMATS: ColumnFormat[] = ["email", "phone", "url"];
+
+export class SchemaColumnConstraintsDto {
+  @ApiPropertyOptional({ example: 3 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  minLength?: number;
+
+  @ApiPropertyOptional({ example: 255 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxLength?: number;
+
+  @ApiPropertyOptional({ enum: COLUMN_FORMATS, example: "email" })
+  @IsOptional()
+  @IsIn(COLUMN_FORMATS)
+  format?: ColumnFormat;
+
+  @ApiPropertyOptional({ type: [String], example: ["pending", "paid"] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  allowedValues?: string[];
+
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional()
+  @IsNumber()
+  min?: number;
+
+  @ApiPropertyOptional({ example: 1000000 })
+  @IsOptional()
+  @IsNumber()
+  max?: number;
+
+  @ApiPropertyOptional({ example: "2026-01-01" })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  minDate?: string;
+
+  @ApiPropertyOptional({ example: "2026-12-31" })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  maxDate?: string;
+}
 
 export class SchemaColumnDto {
   @ApiProperty({ example: "customer-email" })
@@ -44,6 +96,12 @@ export class SchemaColumnDto {
   @ApiProperty({ example: true })
   @IsBoolean()
   required: boolean;
+
+  @ApiPropertyOptional({ type: SchemaColumnConstraintsDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SchemaColumnConstraintsDto)
+  constraints?: SchemaColumnConstraintsDto;
 }
 
 export class SchemaDefinitionDto implements SchemaDefinition {

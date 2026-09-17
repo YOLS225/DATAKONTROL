@@ -15,16 +15,19 @@ enum UploadStatus {
 }
 
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
-  password         String
-  name             String
-  refreshTokenHash String?
-  createdAt        DateTime @default(now())
+  id                          String    @id @default(uuid())
+  email                       String    @unique
+  password                    String
+  name                        String
+  refreshTokenHash            String?
+  passwordResetTokenHash      String?
+  passwordResetTokenExpiresAt DateTime?
+  createdAt                   DateTime  @default(now())
 
   sources        Source[]
   schemaVersions SchemaVersion[] @relation("SchemaVersionCreator")
   uploads        Upload[]
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -109,4 +112,21 @@ model ValidationError {
   @@index([uploadId])
   @@index([uploadId, rowNumber])
   @@map("validation_errors")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

@@ -39,6 +39,39 @@ export class PrismaRegisterRepository implements UserRepository {
     });
   }
 
+  async updatePasswordResetToken(
+    userId: string,
+    tokenHash: string | null,
+    expiresAt: Date | null,
+  ): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetTokenExpiresAt: expiresAt,
+      },
+    });
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: passwordHash,
+        refreshTokenHash: null,
+        passwordResetTokenHash: null,
+        passwordResetTokenExpiresAt: null,
+      },
+    });
+  }
+
+  async findByPasswordResetTokenHash(tokenHash: string): Promise<User | null> {
+    const record = await this.prisma.user.findFirst({
+      where: { passwordResetTokenHash: tokenHash },
+    });
+    return record ? this.toDomain(record) : null;
+  }
+
   private toDomain(record: {
     id: string;
     email: string;
@@ -46,6 +79,8 @@ export class PrismaRegisterRepository implements UserRepository {
     password: string;
     createdAt: Date;
     refreshTokenHash: string | null;
+    passwordResetTokenHash: string | null;
+    passwordResetTokenExpiresAt: Date | null;
   }): User {
     return new User(
       record.id,
@@ -54,6 +89,8 @@ export class PrismaRegisterRepository implements UserRepository {
       record.password,
       record.createdAt,
       record.refreshTokenHash,
+      record.passwordResetTokenHash,
+      record.passwordResetTokenExpiresAt,
     );
   }
 }

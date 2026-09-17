@@ -8,8 +8,10 @@ import {
   SchemaVersion,
   type ColumnType,
   type SchemaColumn,
+  type SchemaColumnConstraints,
   type SchemaDefinition,
 } from "../../../domain/entities/schema.entity.js";
+import type { Prisma } from "../../../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 const COLUMN_TYPES: ReadonlySet<ColumnType> = new Set([
@@ -158,15 +160,19 @@ export class PrismaSchemaRepository implements SchemaVersionRepository {
     );
   }
 
-  private toPersistenceDefinition(definition: SchemaDefinition) {
-    return {
+  private toPersistenceDefinition(
+    definition: SchemaDefinition,
+  ): Prisma.InputJsonValue {
+    const persistenceDefinition = {
       columns: definition.columns.map((column) => ({
         id: column.id,
         name: column.name,
         type: column.type,
         required: column.required,
+        ...(column.constraints && { constraints: column.constraints }),
       })),
     };
+    return persistenceDefinition as unknown as Prisma.InputJsonValue;
   }
 
   private toDomain(record: {
@@ -216,7 +222,81 @@ export class PrismaSchemaRepository implements SchemaVersionRepository {
       name: value.name,
       type: value.type as ColumnType,
       required: value.required,
+      ...(value.constraints !== undefined && {
+        constraints: this.toColumnConstraints(value.constraints),
+      }),
     };
+  }
+
+  private toColumnConstraints(value: unknown): SchemaColumnConstraints {
+    if (!this.isRecord(value)) {
+      throw new Error("Stored schema column constraints are invalid");
+    }
+
+    const constraints: SchemaColumnConstraints = {};
+    if (value.minLength !== undefined) {
+      const minLength = value.minLength;
+      if (typeof minLength !== "number" || !Number.isInteger(minLength)) {
+        throw new Error("Stored minLength constraint is invalid");
+      }
+      constraints.minLength = minLength;
+    }
+    if (value.maxLength !== undefined) {
+      const maxLength = value.maxLength;
+      if (typeof maxLength !== "number" || !Number.isInteger(maxLength)) {
+        throw new Error("Stored maxLength constraint is invalid");
+      }
+      constraints.maxLength = maxLength;
+    }
+    if (value.format !== undefined) {
+      if (
+        value.format !== "email" &&
+        value.format !== "phone" &&
+        value.format !== "url"
+      ) {
+        throw new Error("Stored format constraint is invalid");
+      }
+      constraints.format = value.format;
+    }
+    if (value.allowedValues !== undefined) {
+      if (
+        !Array.isArray(value.allowedValues) ||
+        value.allowedValues.some((item) => typeof item !== "string")
+      ) {
+        throw new Error("Stored allowedValues constraint is invalid");
+      }
+      constraints.allowedValues = value.allowedValues;
+    }
+    if (value.min !== undefined) {
+      const min = value.min;
+      if (typeof min !== "number") {
+        throw new Error("Stored min constraint is invalid");
+      }
+      constraints.min = min;
+    }
+    if (value.max !== undefined) {
+      const max = value.max;
+      if (typeof max !== "number") {
+        throw new Error("Stored max constraint is invalid");
+      }
+      constraints.max = max;
+    }
+    if (value.minDate !== undefined) {
+      const minDate = value.minDate;
+      if (typeof minDate !== "string") {
+        throw new Error("Stored minDate constraint is invalid");
+      }
+      constraints.minDate = minDate;
+    }
+    if (value.maxDate !== undefined) {
+      const maxDate = value.maxDate;
+      if (typeof maxDate !== "string") {
+        throw new Error("Stored maxDate constraint is invalid");
+      }
+      constraints.maxDate = maxDate;
+    }
+
+    return constraints;
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,11 +1,25 @@
 export type ColumnType =
   "string" | "integer" | "decimal" | "boolean" | "date" | "datetime";
 
+export type ColumnFormat = "email" | "phone" | "url";
+
+export interface SchemaColumnConstraints {
+  minLength?: number;
+  maxLength?: number;
+  format?: ColumnFormat;
+  allowedValues?: string[];
+  min?: number;
+  max?: number;
+  minDate?: string;
+  maxDate?: string;
+}
+
 export interface SchemaColumn {
   id: string;
   name: string;
   type: ColumnType;
   required: boolean;
+  constraints?: SchemaColumnConstraints;
 }
 
 export interface SchemaDefinition {

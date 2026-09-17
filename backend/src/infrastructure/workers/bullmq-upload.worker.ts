@@ -7,6 +7,8 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { Worker } from "bullmq";
 import type { Job } from "bullmq";
+import type { NotifyUploadCompletedUseCase } from "../../application/use-cases/notifications/notify-upload-completed.usecase.js";
+import type { NotifyUploadFailedUseCase } from "../../application/use-cases/notifications/notify-upload-failed.usecase.js";
 import type { ValidateUploadUseCase } from "../../application/use-cases/uploads/validate-upload.usecase.js";
 import type { UploadRepository } from "../../domain/ports/repositories/upload.repository.js";
 import {
@@ -29,6 +31,8 @@ export class BullMqUploadWorker implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
     private readonly validateUpload: ValidateUploadUseCase,
     private readonly uploadRepository: UploadRepository,
+    private readonly notifyUploadCompleted: NotifyUploadCompletedUseCase,
+    private readonly notifyUploadFailed: NotifyUploadFailedUseCase,
   ) {}
 
   onModuleInit(): void {
@@ -54,12 +58,14 @@ export class BullMqUploadWorker implements OnModuleInit, OnModuleDestroy {
   ): Promise<void> {
     try {
       await this.validateUpload.execute(job.data.uploadId);
+      await this.notifyCompletion(job.data.uploadId);
     } catch (error) {
       const attempts = job.opts.attempts ?? 1;
       const isLastAttempt = job.attemptsMade + 1 >= attempts;
       if (isLastAttempt) {
         try {
           await this.uploadRepository.fail(job.data.uploadId, new Date());
+          await this.notifyFailure(job.data.uploadId);
         } catch (markFailedError) {
           this.logger.error(
             `Could not mark upload ${job.data.uploadId} as failed`,
@@ -70,6 +76,28 @@ export class BullMqUploadWorker implements OnModuleInit, OnModuleDestroy {
         }
       }
       throw error;
+    }
+  }
+
+  private async notifyCompletion(uploadId: string): Promise<void> {
+    try {
+      await this.notifyUploadCompleted.execute(uploadId);
+    } catch (error) {
+      this.logger.error(
+        `Could not notify completion for upload ${uploadId}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
+
+  private async notifyFailure(uploadId: string): Promise<void> {
+    try {
+      await this.notifyUploadFailed.execute(uploadId);
+    } catch (error) {
+      this.logger.error(
+        `Could not notify failure for upload ${uploadId}`,
+        error instanceof Error ? error.stack : undefined,
+      );
     }
   }
 }

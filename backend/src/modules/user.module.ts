@@ -18,7 +18,9 @@ import {
 } from "../domain/ports/services/auth-token.service.js";
 import { JwtTokenService } from "../infrastructure/security/jwt-token.service.js";
 import { LoginUseCase } from "../application/use-cases/auth/login.usecase.js";
+import { ForgotPasswordUseCase } from "../application/use-cases/auth/forgot-password.usecase.js";
 import { RefreshTokenUseCase } from "../application/use-cases/auth/refresh-token.usecase.js";
+import { ResetPasswordUseCase } from "../application/use-cases/auth/reset-password.usecase.js";
 import { LogoutUseCase } from "../application/use-cases/auth/logout.usecase.js";
 import { JwtAuthGuard } from "../presentation/guards/jwt-auth.guard.js";
 import {
@@ -93,6 +95,24 @@ import { Sha256TokenHasher } from "../infrastructure/security/sha256-token-hashe
         tokenService: AuthTokenService,
         tokenHasher: TokenHasher,
       ) => new LogoutUseCase(users, tokenService, tokenHasher),
+    },
+    {
+      provide: ForgotPasswordUseCase,
+      inject: [USER_REPOSITORY, TOKEN_HASHER, ConfigService],
+      useFactory: (
+        users: UserRepository,
+        tokenHasher: TokenHasher,
+        config: ConfigService,
+      ) => new ForgotPasswordUseCase(users, tokenHasher, config),
+    },
+    {
+      provide: ResetPasswordUseCase,
+      inject: [USER_REPOSITORY, PASSWORD_HASHER, TOKEN_HASHER],
+      useFactory: (
+        users: UserRepository,
+        passwordHasher: PasswordHasher,
+        tokenHasher: TokenHasher,
+      ) => new ResetPasswordUseCase(users, passwordHasher, tokenHasher),
     },
   ],
   exports: [USER_REPOSITORY, AUTH_TOKEN_SERVICE, JwtAuthGuard],

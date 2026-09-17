@@ -2,10 +2,18 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
 import { LoginUseCase } from "../../application/use-cases/auth/login.usecase.js";
 import { LogoutUseCase } from "../../application/use-cases/auth/logout.usecase.js";
+import { ForgotPasswordUseCase } from "../../application/use-cases/auth/forgot-password.usecase.js";
 import { RefreshTokenUseCase } from "../../application/use-cases/auth/refresh-token.usecase.js";
 import { RegisterUseCase } from "../../application/use-cases/auth/register.usecase.js";
+import { ResetPasswordUseCase } from "../../application/use-cases/auth/reset-password.usecase.js";
 import { AuthSession } from "../../application/use-cases/auth/auth-session.js";
-import { CreateUserDto, LoginDto, RefreshTokenDto } from "../dto/user.dto.js";
+import {
+  CreateUserDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RefreshTokenDto,
+  ResetPasswordDto,
+} from "../dto/user.dto.js";
 
 @Controller("auth")
 export class AuthController {
@@ -14,6 +22,8 @@ export class AuthController {
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly forgotPasswordUseCase: ForgotPasswordUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
   ) {}
 
   @Post("register")
@@ -41,5 +51,21 @@ export class AuthController {
   @ApiOperation({ summary: "Invalidate a refresh token" })
   async logout(@Body() { refreshToken }: RefreshTokenDto): Promise<void> {
     await this.logoutUseCase.execute(refreshToken);
+  }
+
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Request a password reset token" })
+  forgotPassword(
+    @Body() { email }: ForgotPasswordDto,
+  ): Promise<{ resetToken?: string }> {
+    return this.forgotPasswordUseCase.execute(email);
+  }
+
+  @Post("reset-password")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Reset password using a reset token" })
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+    return this.resetPasswordUseCase.execute(dto);
   }
 }

@@ -537,10 +537,6 @@ export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type SchemaVersionCreateNestedOneWithoutUploadsInput = {
   create?: Prisma.XOR<Prisma.SchemaVersionCreateWithoutUploadsInput, Prisma.SchemaVersionUncheckedCreateWithoutUploadsInput>
   connectOrCreate?: Prisma.SchemaVersionCreateOrConnectWithoutUploadsInput

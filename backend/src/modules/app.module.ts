@@ -7,6 +7,7 @@ import { SourceModule } from "./source.module.js";
 import { SchemaModule } from "./schema.module.js";
 import { UploadModule } from "./upload.module.js";
 import { DashboardModule } from "./dashboard.module.js";
+import { NotificationModule } from "./notification.module.js";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DashboardModule } from "./dashboard.module.js";
     SchemaModule,
     UploadModule,
     DashboardModule,
+    NotificationModule,
   ],
   controllers: [HealthController],
 })

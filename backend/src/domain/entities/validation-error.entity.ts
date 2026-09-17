@@ -3,7 +3,15 @@ export type ValidationErrorType =
   | "UNKNOWN_COLUMN"
   | "REQUIRED"
   | "INVALID_TYPE"
-  | "DUPLICATE_ROW";
+  | "DUPLICATE_ROW"
+  | "MIN_LENGTH"
+  | "MAX_LENGTH"
+  | "INVALID_FORMAT"
+  | "NOT_ALLOWED_VALUE"
+  | "MIN_VALUE"
+  | "MAX_VALUE"
+  | "MIN_DATE"
+  | "MAX_DATE";
 
 export class ValidationErrorEntity {
   constructor(

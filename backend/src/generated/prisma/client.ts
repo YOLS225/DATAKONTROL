@@ -66,3 +66,8 @@ export type Upload = Prisma.UploadModel
  * 
  */
 export type ValidationError = Prisma.ValidationErrorModel
+/**
+ * Model Notification
+ * 
+ */
+export type Notification = Prisma.NotificationModel
